@@ -1,0 +1,10 @@
+# Thai SET IR Universe — Python dependencies
+# All stdlib except these:
+# (urllib is built-in — no additional packages needed for basic use)
+
+# Optional: faster parallel URL checking
+# aiohttp>=3.9.0
+# asyncio
+
+# Optional: richer CLI output
+# rich>=13.0.0

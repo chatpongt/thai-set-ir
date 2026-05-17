@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thai SET · IR Universe</title>
+<script src="data/companies.js"></script>
+<style>
+:root {
+  --bg:      #eef1f5;
+  --surface: #ffffff;
+  --border:  #e2e8f0;
+  --text:    #1a202c;
+  --muted:   #718096;
+  --accent:  #2b6cb0;
+  --hdr1:    #0f172a;
+  --hdr2:    #1e3a5f;
+  color-scheme: light;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 13px; }
+
+/* ── HEADER ─────────────────────────────── */
+.hdr { background: linear-gradient(135deg, var(--hdr1) 0%, var(--hdr2) 100%); color: #fff; padding: 20px 28px 18px; }
+.hdr-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.hdr h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+.hdr-sub { font-size: 11px; color: #90cdf4; margin-top: 4px; }
+.hdr-actions { display: flex; gap: 8px; align-items: center; }
+.hdr-badge { background: rgba(16,185,129,.2); border: 1px solid rgba(16,185,129,.4); color: #6ee7b7; font-size: 10px; font-weight: 700; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
+.btn-export { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); color: #e2e8f0; font-size: 11px; font-weight: 700; padding: 5px 13px; border-radius: 8px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.btn-export:hover { background: rgba(255,255,255,.2); }
+.stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.stat { background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 8px 16px; text-align: center; min-width: 70px; }
+.stat-v { font-size: 20px; font-weight: 800; color: #f0fff4; line-height: 1; }
+.stat-l { font-size: 9px; text-transform: uppercase; letter-spacing: .6px; color: #90cdf4; margin-top: 3px; }
+
+/* ── CONTROLS ────────────────────────────── */
+.ctrl { background: var(--surface); padding: 11px 28px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; position: sticky; top: 0; z-index: 200; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+.sw { position: relative; flex: 1; min-width: 160px; max-width: 260px; }
+.sw input { width: 100%; padding: 7px 10px 7px 30px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; background: #f7fafc; outline: none; transition: all .15s; }
+.sw input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(43,108,176,.1); }
+.sw-ico { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 13px; }
+.fwrap { display: flex; gap: 5px; flex-wrap: wrap; }
+.fb { padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; color: #4a5568; transition: all .15s; white-space: nowrap; }
+.fb:hover { border-color: var(--accent); color: var(--accent); }
+.fb.on { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+.toggle-inactive { font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; padding: 5px 10px; border: 1.5px solid var(--border); border-radius: 20px; background: #fff; }
+.toggle-inactive.on { background: #fed7d7; border-color: #fc8181; color: #c53030; }
+.rc { font-size: 11px; color: var(--muted); margin-left: auto; font-weight: 600; white-space: nowrap; }
+
+/* ── TABLE WRAPPER ───────────────────────── */
+.tw { padding: 14px 28px 40px; overflow-x: auto; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+thead th { background: #f7fafc; padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); border-bottom: 2px solid var(--border); white-space: nowrap; }
+th.sort { cursor: pointer; user-select: none; }
+th.sort:hover { color: var(--accent); }
+td { padding: 9px 12px; border-bottom: 1px solid #f0f4f8; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f5f8ff; }
+tr.inactive td { opacity: .45; }
+
+/* ── TICKER ──────────────────────────────── */
+.tk { display: inline-block; font-family: 'SF Mono','Fira Code',monospace; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 5px; background: #1a202c; color: #fff; letter-spacing: .3px; min-width: 58px; text-align: center; }
+.tk.inactive { background: #a0aec0; }
+
+/* ── SECTOR BADGES ───────────────────────── */
+.sb { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.s-Banking    { background:#dbeafe; color:#1e40af; }
+.s-Energy     { background:#ffedd5; color:#9a3412; }
+.s-Healthcare { background:#dcfce7; color:#166534; }
+.s-Property   { background:#f3e8ff; color:#6b21a8; }
+.s-REIT       { background:#ede9fe; color:#5b21b6; }
+.s-Commerce   { background:#fef9c3; color:#854d0e; }
+.s-Finance    { background:#ccfbf1; color:#115e59; }
+.s-Industrial { background:#f1f5f9; color:#475569; }
+.s-Food       { background:#fce7f3; color:#9d174d; }
+.s-Hospitality{ background:#fff7ed; color:#9a3412; }
+.s-Telecom    { background:#e0f2fe; color:#075985; }
+.s-Tech       { background:#eef2ff; color:#3730a3; }
+.s-Transport  { background:#fef3c7; color:#78350f; }
+.s-Utilities  { background:#d1fae5; color:#064e3b; }
+.s-Media      { background:#fdf4ff; color:#7e22ce; }
+.s-Insurance  { background:#eff6ff; color:#1e3a8a; }
+.s-Education  { background:#f0fdf4; color:#14532d; }
+.s-Infra      { background:#f8fafc; color:#334155; }
+
+/* ── LINK BUTTONS ────────────────────────── */
+.bgroup { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+.lb { display: inline-flex; align-items: center; gap: 3px; padding: 4px 8px; border-radius: 5px; font-size: 10px; font-weight: 700; text-decoration: none; border: 1.5px solid; cursor: pointer; transition: all .12s; white-space: nowrap; line-height: 1.3; }
+.lb-ir   { color:#2b6cb0; border-color:#bee3f8; background:#fff; }
+.lb-ir:hover   { background:#ebf8ff; border-color:#2b6cb0; }
+.lb-561  { color:#744210; border-color:#fbd38d; background:#fff; }
+.lb-561:hover  { background:#fefcbf; border-color:#d69e2e; }
+.lb-fs   { color:#276749; border-color:#9ae6b4; background:#fff; }
+.lb-fs:hover   { background:#f0fff4; border-color:#276749; }
+.lb-mda  { color:#553c9a; border-color:#d6bcfa; background:#fff; }
+.lb-mda:hover  { background:#faf5ff; border-color:#553c9a; }
+.lb-set  { color:#1a365d; border-color:#90cdf4; background:#fff; }
+.lb-set:hover  { background:#ebf8ff; border-color:#1a365d; }
+.lb-yt   { color:#c53030; border-color:#feb2b2; background:#fff; }
+.lb-yt:hover   { background:#fff5f5; border-color:#c53030; }
+.lb-na   { color:#cbd5e0; border-color:#e2e8f0; background:#f7fafc; cursor:default; pointer-events:none; }
+
+/* ── NOTES ───────────────────────────────── */
+.note-badge { font-size: 10px; color: #d69e2e; background: #fefcbf; border-radius: 4px; padding: 1px 5px; font-weight: 600; }
+
+/* ── VERIFIED BADGE ──────────────────────── */
+.vdate { font-size: 10px; color: #a0aec0; font-family: monospace; }
+
+/* ── EMPTY STATE ─────────────────────────── */
+.empty { text-align: center; padding: 60px 24px; display: none; }
+.empty-ico { font-size: 44px; margin-bottom: 12px; }
+.empty-txt { color: var(--muted); font-size: 15px; }
+
+/* ── SOURCE NOTES ────────────────────────── */
+.snote { background: var(--surface); border-top: 1px solid var(--border); padding: 10px 28px; font-size: 10px; color: #a0aec0; line-height: 1.8; }
+.snote strong { color: #718096; }
+
+/* ── FOOTER ──────────────────────────────── */
+.ftr { text-align: center; padding: 8px 28px 20px; font-size: 10px; color: #a0aec0; }
+
+/* ── MOBILE ──────────────────────────────── */
+@media (max-width: 640px) {
+  .hdr, .ctrl, .tw { padding-left: 14px; padding-right: 14px; }
+  .hdr h1 { font-size: 16px; }
+  .stats { gap: 7px; }
+  .stat { padding: 6px 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div>
+      <h1>🇹🇭 Thai SET · IR Universe</h1>
+      <div class="hdr-sub">Investor Relations · 56-1 One Report · Financial Statements · MD&amp;A · Opportunity Day</div>
+    </div>
+    <div class="hdr-actions">
+      <button class="btn-export" onclick="exportCSV()">📥 Export CSV</button>
+      <div class="hdr-badge" id="verifiedBadge">✓ Verified</div>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-v" id="s-total">–</div><div class="stat-l">บริษัท</div></div>
+    <div class="stat"><div class="stat-v" id="s-sectors">–</div><div class="stat-l">Sectors</div></div>
+    <div class="stat"><div class="stat-v" id="s-ir">–</div><div class="stat-l">IR Pages</div></div>
+    <div class="stat"><div class="stat-v">81</div><div class="stat-l">SEC 56-1</div></div>
+    <div class="stat"><div class="stat-v">81</div><div class="stat-l">FS Links</div></div>
+    <div class="stat"><div class="stat-v">81</div><div class="stat-l">MD&amp;A Links</div></div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="ctrl">
+  <div class="sw">
+    <span class="sw-ico">🔍</span>
+    <input id="q" type="text" placeholder="ค้นหา Ticker / ชื่อบริษัท…" oninput="render()">
+  </div>
+  <div class="fwrap" id="fbar">
+    <button class="fb on"  onclick="setS('ALL',this)">ทั้งหมด</button>
+    <button class="fb" onclick="setS('Banking',this)">Banking</button>
+    <button class="fb" onclick="setS('Energy',this)">Energy</button>
+    <button class="fb" onclick="setS('Healthcare',this)">Healthcare</button>
+    <button class="fb" onclick="setS('Property',this)">Property</button>
+    <button class="fb" onclick="setS('REIT',this)">REIT</button>
+    <button class="fb" onclick="setS('Commerce',this)">Commerce</button>
+    <button class="fb" onclick="setS('Finance',this)">Finance</button>
+    <button class="fb" onclick="setS('Industrial',this)">Industrial</button>
+    <button class="fb" onclick="setS('Food',this)">Food &amp; Bev</button>
+    <button class="fb" onclick="setS('Hospitality',this)">Hospitality</button>
+    <button class="fb" onclick="setS('Telecom',this)">Telecom</button>
+    <button class="fb" onclick="setS('Tech',this)">Tech</button>
+    <button class="fb" onclick="setS('Transport',this)">Transport</button>
+  </div>
+  <button class="toggle-inactive" id="inactiveBtn" onclick="toggleInactive()">⛔ Show Delisted</button>
+  <div class="rc" id="rc">–</div>
+</div>
+
+<!-- TABLE -->
+<div class="tw">
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th style="width:32px">#</th>
+        <th class="sort" onclick="srt('ticker')">Ticker ↕</th>
+        <th>ชื่อบริษัท</th>
+        <th class="sort" onclick="srt('sector')">Sector ↕</th>
+        <th title="Investor Relations Website">🏢 IR</th>
+        <th title="56-1 One Report — SEC IDISC">📋 56-1</th>
+        <th title="Financial Statements — SET">📊 FS</th>
+        <th title="MD&A / Quarterly Filings — SET">📝 MD&amp;A</th>
+        <th title="Opportunity Day">🎬 Opp Day</th>
+        <th title="Last Verified">🗓</th>
+      </tr>
+    </thead>
+    <tbody id="tb"></tbody>
+  </table>
+  <div class="empty" id="emp">
+    <div class="empty-ico">🔍</div>
+    <div class="empty-txt">ไม่พบรายการที่ค้นหา</div>
+  </div>
+</div>
+
+<!-- SOURCE NOTES -->
+<div class="snote">
+  <strong>Auto-generated links per Ticker: </strong>
+  📋 56-1 → market.sec.or.th/public/idisc/en/companyprofile/listed/{TICKER} &nbsp;|&nbsp;
+  📊 FS → set.or.th/.../financial-statement/company-highlights &nbsp;|&nbsp;
+  📝 MD&amp;A → set.or.th/.../news &nbsp;|&nbsp;
+  🎯 OppDay SET → set.or.th/.../company-profile/oppday-company-snapshot &nbsp;|&nbsp;
+  🏢 IR = manually verified · ✏️ Edit: data/companies.js · 🔄 Validate: python scripts/update.py --check
+</div>
+<div class="ftr">Thai SET IR Universe · Jon's RSI Cluster System · v2.1 · <span id="ver">–</span></div>
+
+<script>
+// ── URL generators (mirror CLAUDE.md) ─────────────────────────────────────
+const SEC = 'https://market.sec.or.th/public/idisc/en/companyprofile/listed/';
+const SET = 'https://www.set.or.th/en/market/product/stock/quote/';
+const u561 = t => SEC + t;
+const uFS  = t => SET + t.toLowerCase() + '/financial-statement/company-highlights';
+const uMDA = t => SET + t.toLowerCase() + '/news';
+const uOPP = t => SET + t.toLowerCase() + '/company-profile/oppday-company-snapshot';
+
+// ── State ──────────────────────────────────────────────────────────────────
+let curSector = 'ALL', sk = 'ticker', asc = true, showInactive = false;
+
+// ── Init stats ─────────────────────────────────────────────────────────────
+function initStats() {
+  const active = COMPANIES.filter(c => c.active !== false);
+  document.getElementById('s-total').textContent   = active.length;
+  document.getElementById('s-sectors').textContent = new Set(active.map(c=>c.sector)).size;
+  document.getElementById('s-ir').textContent      = active.filter(c=>c.ir).length;
+  // Verified badge: latest date
+  const dates = active.map(c=>c.lastVerified).filter(Boolean).sort();
+  const latest = dates[dates.length-1] || '–';
+  document.getElementById('verifiedBadge').textContent = '✓ Verified ' + latest;
+  document.getElementById('ver').textContent = latest;
+}
+
+// ── Filter + sort ──────────────────────────────────────────────────────────
+function getRows() {
+  const q = document.getElementById('q').value.toLowerCase().trim();
+  return COMPANIES
+    .filter(c => {
+      if (!showInactive && c.active === false) return false;
+      const ms = curSector === 'ALL' || c.sector === curSector;
+      const mq = !q || c.ticker.toLowerCase().includes(q)
+                    || c.name.toLowerCase().includes(q)
+                    || (c.nameFull||'').toLowerCase().includes(q)
+                    || c.sector.toLowerCase().includes(q);
+      return ms && mq;
+    })
+    .sort((a,b) => {
+      const va = (a[sk]||'').toString(), vb = (b[sk]||'').toString();
+      return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+    });
+}
+
+// ── Link button helper ─────────────────────────────────────────────────────
+function lb(cls, href, ico, label, tip) {
+  if (!href) return `<span class="lb lb-na" title="${tip}">– N/A</span>`;
+  return `<a class="lb ${cls}" href="${href}" target="_blank" rel="noopener" title="${tip}">${ico} ${label}</a>`;
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render() {
+  const rows = getRows();
+  const tb   = document.getElementById('tb');
+  const emp  = document.getElementById('emp');
+  const tbl  = document.getElementById('tbl');
+  document.getElementById('rc').textContent = `${rows.length} / ${COMPANIES.filter(c=>showInactive||c.active!==false).length} รายการ`;
+
+  if (!rows.length) {
+    emp.style.display = 'block'; tbl.style.display = 'none'; return;
+  }
+  emp.style.display = 'none'; tbl.style.display = '';
+
+  tb.innerHTML = rows.map((c,i) => {
+    const inactive = c.active === false;
+    const tkCls    = inactive ? 'tk inactive' : 'tk';
+    const noteHtml = c.notes ? ` <span class="note-badge" title="${c.notes}">📌</span>` : '';
+    return `
+    <tr class="${inactive ? 'inactive' : ''}">
+      <td style="color:#cbd5e0;font-size:10px;font-family:monospace;font-weight:600">${i+1}</td>
+      <td><span class="${tkCls}">${c.ticker}</span></td>
+      <td style="font-weight:500;min-width:155px">${c.name}${noteHtml}</td>
+      <td><span class="sb s-${c.sector}">${c.sector}</span></td>
+      <td>${lb('lb-ir',  c.ir,         '🏢','IR',   'IR — '+c.name)}</td>
+      <td>${lb('lb-561', u561(c.ticker),'📋','56-1', '56-1 One Report · SEC IDISC')}</td>
+      <td>${lb('lb-fs',  uFS(c.ticker), '📊','FS',   'Financial Statements · SET')}</td>
+      <td>${lb('lb-mda', uMDA(c.ticker),'📝','MD&A', 'MD&A / Quarterly Filings · SET')}</td>
+      <td>
+        <div class="bgroup">
+          ${lb('lb-set', uOPP(c.ticker),'🎯','SET', 'Opp Day Official · SET')}
+          ${lb('lb-yt',  c.yt||null,    '▶','YT',  'Opp Day · YouTube Search')}
+        </div>
+      </td>
+      <td><span class="vdate">${c.lastVerified||'–'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Controls ───────────────────────────────────────────────────────────────
+function setS(sector, btn) {
+  curSector = sector;
+  document.querySelectorAll('.fb').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+function srt(key) {
+  if (sk === key) asc = !asc; else { sk = key; asc = true; }
+  render();
+}
+function toggleInactive() {
+  showInactive = !showInactive;
+  const btn = document.getElementById('inactiveBtn');
+  btn.classList.toggle('on', showInactive);
+  btn.textContent = showInactive ? '⛔ Hide Delisted' : '⛔ Show Delisted';
+  render();
+}
+
+// ── Export CSV ─────────────────────────────────────────────────────────────
+function exportCSV() {
+  const rows  = getRows();
+  const heads = ['Ticker','Name','FullName','Sector','IR','56-1','FS','MD&A','OppDay_SET','OppDay_YT','Notes','LastVerified'];
+  const esc   = v => `"${(v||'').toString().replace(/"/g,'""')}"`;
+  const lines = [heads.join(',')];
+  rows.forEach(c => {
+    lines.push([
+      c.ticker, c.name, c.nameFull||'', c.sector,
+      c.ir||'', u561(c.ticker), uFS(c.ticker), uMDA(c.ticker),
+      uOPP(c.ticker), c.yt||'', c.notes||'', c.lastVerified||''
+    ].map(esc).join(','));
+  });
+  const blob = new Blob(['﻿'+lines.join('\n')], { type:'text/csv;charset=utf-8;' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `thai-set-ir_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+initStats();
+render();
+</script>
+</body>
+</html>
