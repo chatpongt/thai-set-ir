@@ -10,6 +10,13 @@ Usage:
   python update.py --remove TICKER      Mark company as active:false
   python update.py --export out.csv     Export to CSV
   python update.py --report             Full quarterly health report
+  python update.py --list               Dump all companies (use with --json)
+
+Structured output (gws-style — agent friendly):
+  Add --json to any read command (check/report/list) to emit machine-readable
+  JSON on stdout instead of the human report, e.g.:
+      python update.py --check --json | jq '.broken[].ticker'
+      python update.py --list  --json | jq '[.companies[] | select(.ir==null)]'
 """
 
 import sys, os, re, json, csv, argparse, datetime
@@ -28,6 +35,15 @@ VALID_SECTORS = {
 }
 
 REQUIRED_FIELDS = ["ticker","name","nameFull","sector","ir","yt","notes","lastVerified","active"]
+
+# ── Structured (JSON) output ──────────────────────────────────────────────────
+# gws-style: read commands emit machine-readable JSON when --json is set, so an
+# LLM agent or `jq` can consume the result without scraping human text.
+JSON_OUT = False
+
+def emit(payload):
+    """Print a structured JSON envelope to stdout (only when --json is active)."""
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 # Auto-generated URL patterns (same as index.html)
 def url_561(ticker):  return f"https://market.sec.or.th/public/idisc/en/companyprofile/listed/{ticker}"
@@ -48,12 +64,14 @@ def load_companies():
     # Convert JS object literals to JSON
     # Fix: single-quoted strings → double-quoted (careful with apostrophes)
     # We use a simple regex approach for this well-structured file
-    js_array = re.sub(r"//.*", "", js_array)           # remove // comments
+    js_array = re.sub(r"(?<!:)//.*", "", js_array)     # remove // comments (keep :// in URLs)
     js_array = re.sub(r",\s*\n\s*\]", "\n]", js_array) # trailing comma before ]
     js_array = re.sub(r",\s*\}", "}", js_array)         # trailing comma in object
 
-    # Replace unquoted keys: word: → "word":
-    js_array = re.sub(r"(\b)([a-zA-Z_][a-zA-Z0-9_]*)(\s*):", r'"\2"\3:', js_array)
+    # Quote only the known schema keys (anchored to { or , so colons inside
+    # string values — e.g. "https://" — are never mistaken for keys).
+    key_re = "|".join(re.escape(k) for k in REQUIRED_FIELDS)
+    js_array = re.sub(rf"([{{,]\s*)({key_re})(\s*):", r'\1"\2"\3:', js_array)
 
     # Replace single-quoted strings with double-quoted
     # Handle escaped apostrophes and ampersands
@@ -118,7 +136,8 @@ def cmd_check(args):
     """Validate all active IR URLs and report broken ones."""
     companies = load_companies()
     active = [c for c in companies if c.get('active', True)]
-    print(f"\n🔍 Checking {len(active)} companies (IR links only)...\n")
+    if not JSON_OUT:
+        print(f"\n🔍 Checking {len(active)} companies (IR links only)...\n")
 
     broken, ok, skipped = [], [], []
     for c in active:
@@ -129,12 +148,27 @@ def cmd_check(args):
         status, good, err = check_url(c['ir'])
         if good:
             ok.append(ticker)
-            if args.verbose:
+            if args.verbose and not JSON_OUT:
                 print(f"  ✅ {ticker:<12} {status}  {c['ir']}")
         else:
             broken.append((ticker, c['ir'], status, err))
-            print(f"  ❌ {ticker:<12} {status or '---'}  {c['ir']}")
-            if err: print(f"              {err}")
+            if not JSON_OUT:
+                print(f"  ❌ {ticker:<12} {status or '---'}  {c['ir']}")
+                if err: print(f"              {err}")
+
+    if JSON_OUT:
+        emit({
+            "command": "check",
+            "checked": len(active),
+            "ok": len(ok),
+            "skipped": skipped,
+            "broken": [
+                {"ticker": t, "url": url, "status": code, "error": err}
+                for t, url, code, err in broken
+            ],
+            "pass": len(broken) == 0,
+        })
+        sys.exit(0 if not broken else 1)
 
     print(f"\n{'─'*60}")
     print(f"  ✅ OK:      {len(ok)}")
@@ -259,6 +293,21 @@ def cmd_report(args):
                 missing.append(f"{c['ticker']}.{f}")
 
     today = datetime.date.today().isoformat()
+
+    if JSON_OUT:
+        emit({
+            "command": "report",
+            "date": today,
+            "active": len(active),
+            "inactive": len(inactive),
+            "missingIr": no_ir,
+            "missingYt": no_yt,
+            "sectors": dict(sectors),
+            "missingFields": missing,
+            "healthy": not missing,
+        })
+        return
+
     print(f"\n{'═'*60}")
     print(f"  Thai SET IR Universe — Quarterly Report  {today}")
     print(f"{'═'*60}")
@@ -282,27 +331,75 @@ def cmd_report(args):
     print(f"{'═'*60}\n")
 
 
+# ── List (agent-facing dump) ──────────────────────────────────────────────────
+def cmd_list(args):
+    """Dump companies as structured records, incl. auto-generated SET/SEC URLs.
+
+    Designed for agents/jq: `python update.py --list --json`. Without --json it
+    prints a compact human table.
+    """
+    companies = load_companies()
+    rows = companies if args.all else [c for c in companies if c.get('active', True)]
+
+    def enrich(c):
+        t = c['ticker']
+        return {
+            **c,
+            "links": {
+                "ir":    c.get('ir'),
+                "yt":    c.get('yt'),
+                "sec561": url_561(t),
+                "fs":     url_fs(t),
+                "mda":    url_mda(t),
+                "oppday": url_opp(t),
+            },
+        }
+
+    enriched = [enrich(c) for c in rows]
+
+    if JSON_OUT:
+        emit({"command": "list", "count": len(enriched), "companies": enriched})
+        return
+
+    print(f"\n  {'TICKER':<12}{'SECTOR':<14}{'IR':<6}NAME")
+    print(f"  {'─'*58}")
+    for c in rows:
+        ir_flag = "✅" if c.get('ir') else "—"
+        print(f"  {c['ticker']:<12}{c['sector']:<14}{ir_flag:<6}{c['name']}")
+    print(f"\n  {len(rows)} companies\n")
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main():
     ap = argparse.ArgumentParser(description="Thai SET IR Universe — Update Tool")
     sub = ap.add_subparsers(dest="cmd")
 
-    p_check = sub.add_parser("--check", help="Validate IR URLs")
+    ap.add_argument("--json", action="store_true",
+                    help="Emit structured JSON (check/report/list) for agents/jq")
+
+    p_check = sub.add_parser("check", help="Validate IR URLs")
     p_check.add_argument("--verbose", action="store_true")
+    p_check.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
 
-    sub.add_parser("--stamp", help="Update lastVerified to today")
-    sub.add_parser("--report", help="Quarterly health report")
+    sub.add_parser("stamp", help="Update lastVerified to today")
 
-    p_add = sub.add_parser("--add", help="Add new company")
+    p_report = sub.add_parser("report", help="Quarterly health report")
+    p_report.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
+
+    p_list = sub.add_parser("list", help="Dump companies (use with --json)")
+    p_list.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
+    p_list.add_argument("--all", action="store_true", help="Include inactive companies")
+
+    p_add = sub.add_parser("add", help="Add new company")
     p_add.add_argument("ticker")
     p_add.add_argument("name")
     p_add.add_argument("sector")
     p_add.add_argument("ir_url")
 
-    p_rm = sub.add_parser("--remove", help="Deactivate company")
+    p_rm = sub.add_parser("remove", help="Deactivate company")
     p_rm.add_argument("ticker")
 
-    p_exp = sub.add_parser("--export", help="Export to CSV")
+    p_exp = sub.add_parser("export", help="Export to CSV")
     p_exp.add_argument("output", nargs="?", default="companies_export.csv")
 
     # Allow --flag style args too (in addition to subcommand style)
@@ -310,12 +407,17 @@ def main():
         ap.print_help()
         sys.exit(0)
 
-    # Normalize: treat '--check' as subcommand 'check' etc.
+    # Normalize: treat '--check' as subcommand 'check' etc., but leave
+    # '--help'/'-h' (and anything that isn't a real command) untouched.
     args_in = sys.argv[1:]
-    if args_in[0].startswith("--"):
+    COMMANDS = {"check","stamp","report","list","add","remove","export"}
+    if args_in[0].startswith("--") and args_in[0][2:] in COMMANDS:
         args_in[0] = args_in[0][2:]
 
     args = ap.parse_args(args_in)
+
+    global JSON_OUT
+    JSON_OUT = getattr(args, "json", False)
 
     dispatch = {
         "check":   cmd_check,
@@ -324,6 +426,7 @@ def main():
         "remove":  cmd_remove,
         "export":  cmd_export,
         "report":  cmd_report,
+        "list":    cmd_list,
     }
     fn = dispatch.get(args.cmd)
     if fn:
