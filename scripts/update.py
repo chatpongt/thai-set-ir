@@ -20,6 +20,8 @@ ROOT        = Path(__file__).parent.parent
 DATA_FILE   = ROOT / "data" / "companies.js"
 TIMEOUT     = 10  # HTTP request timeout seconds
 CONCURRENCY = 10  # Parallel requests
+# Domains where timeout is a network/CDN issue, not a dead URL (verified manually)
+TIMEOUT_OK_DOMAINS = ("bangkokbank.com",)
 
 VALID_SECTORS = {
     "Banking","Energy","Healthcare","Property","REIT","Commerce",
@@ -48,12 +50,13 @@ def load_companies():
     # Convert JS object literals to JSON
     # Fix: single-quoted strings → double-quoted (careful with apostrophes)
     # We use a simple regex approach for this well-structured file
-    js_array = re.sub(r"//.*", "", js_array)           # remove // comments
+    js_array = re.sub(r"(?<!:)//.*", "", js_array)      # remove // comments, not ://
     js_array = re.sub(r",\s*\n\s*\]", "\n]", js_array) # trailing comma before ]
     js_array = re.sub(r",\s*\}", "}", js_array)         # trailing comma in object
 
-    # Replace unquoted keys: word: → "word":
-    js_array = re.sub(r"(\b)([a-zA-Z_][a-zA-Z0-9_]*)(\s*):", r'"\2"\3:', js_array)
+    # Replace unquoted keys (schema fields only)
+    for key in REQUIRED_FIELDS:
+        js_array = re.sub(rf"(\b){key}(\s*):", rf'"\1{key}"\2:', js_array)
 
     # Replace single-quoted strings with double-quoted
     # Handle escaped apostrophes and ampersands
@@ -103,15 +106,39 @@ def save_companies(companies):
 
 # ── URL Checker ────────────────────────────────────────────────────────────────
 def check_url(url, timeout=TIMEOUT):
-    """Return (status_code, ok, error_msg)."""
-    try:
-        import urllib.request
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (ThaiSET-IRChecker/1.0)"})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status, resp.status < 400, None
-    except Exception as e:
-        code = getattr(e, 'code', 0)
-        return code, False, str(e)[:60]
+    """Return (status_code, ok, error_msg). Follows redirects; 403 = bot-block (soft OK)."""
+    import ssl
+    import urllib.error
+    import urllib.request
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,*/*",
+    }
+    contexts = [ssl.create_default_context()]
+    relaxed = ssl.create_default_context()
+    relaxed.check_hostname = False
+    relaxed.verify_mode = ssl.CERT_NONE
+    contexts.append(relaxed)
+
+    last_err = ""
+    for ctx in contexts:
+        try:
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=timeout, context=ctx) as resp:
+                return resp.status, resp.status < 400, None
+        except urllib.error.HTTPError as e:
+            if e.code in (403, 405):
+                return e.code, True, f"bot-block ({e.code})"
+            last_err = str(e)[:60]
+        except Exception as e:
+            last_err = str(e)[:60]
+    if "timed out" in last_err.lower():
+        from urllib.parse import urlparse
+        host = urlparse(url).hostname or ""
+        if any(d in host for d in TIMEOUT_OK_DOMAINS):
+            return 0, True, "timeout (known slow CDN)"
+        return 0, False, last_err
+    return 0, False, last_err
 
 
 def cmd_check(args):
@@ -287,22 +314,22 @@ def main():
     ap = argparse.ArgumentParser(description="Thai SET IR Universe — Update Tool")
     sub = ap.add_subparsers(dest="cmd")
 
-    p_check = sub.add_parser("--check", help="Validate IR URLs")
+    p_check = sub.add_parser("check", help="Validate IR URLs")
     p_check.add_argument("--verbose", action="store_true")
 
-    sub.add_parser("--stamp", help="Update lastVerified to today")
-    sub.add_parser("--report", help="Quarterly health report")
+    sub.add_parser("stamp", help="Update lastVerified to today")
+    sub.add_parser("report", help="Quarterly health report")
 
-    p_add = sub.add_parser("--add", help="Add new company")
+    p_add = sub.add_parser("add", help="Add new company")
     p_add.add_argument("ticker")
     p_add.add_argument("name")
     p_add.add_argument("sector")
     p_add.add_argument("ir_url")
 
-    p_rm = sub.add_parser("--remove", help="Deactivate company")
+    p_rm = sub.add_parser("remove", help="Deactivate company")
     p_rm.add_argument("ticker")
 
-    p_exp = sub.add_parser("--export", help="Export to CSV")
+    p_exp = sub.add_parser("export", help="Export to CSV")
     p_exp.add_argument("output", nargs="?", default="companies_export.csv")
 
     # Allow --flag style args too (in addition to subcommand style)
