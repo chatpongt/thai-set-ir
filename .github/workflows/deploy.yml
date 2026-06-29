@@ -29,11 +29,12 @@ jobs:
           node -e "
             const fs = require('fs');
             const src = fs.readFileSync('data/companies.js','utf8');
-            // Check COMPANIES array is accessible
-            eval(src);
-            console.log('✅ companies.js syntax OK —', COMPANIES.length, 'companies');
+            // const does not leak from eval(); use var for CI validation only
+            eval(src.replace(/const\s+COMPANIES/, 'var COMPANIES'));
+            if (!Array.isArray(COMPANIES)) throw new Error('COMPANIES is not an array');
+            console.log('companies.js syntax OK -', COMPANIES.length, 'companies');
             const active = COMPANIES.filter(c => c.active !== false);
-            console.log('   Active:', active.length, '| Inactive:', COMPANIES.length - active.length);
+            console.log('Active:', active.length, '| Inactive:', COMPANIES.length - active.length);
           "
 
       - name: Setup Pages
