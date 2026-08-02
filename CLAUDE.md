@@ -18,10 +18,20 @@ thai-set-ir-web/
 ├── scripts/
 │   ├── update.py               ← URL validator & quarterly update tool
 │   └── requirements.txt
+├── skills/
+│   └── thai-set-ir/
+│       └── SKILL.md            ← Agent skill (gws-style): how to drive update.py
 └── .github/
     └── workflows/
         └── deploy.yml          ← Auto-deploy to GitHub Pages on push
 ```
+
+> **Agent skill:** `skills/thai-set-ir/SKILL.md` documents every `update.py`
+> command in a single self-contained file (frontmatter + JSON output shapes),
+> modeled on the Google Workspace CLI (`gws`) skill format. Read it first when
+> automating data maintenance. Read commands (`--check`, `--report`, `--list`)
+> support `--json` for machine-readable output: e.g.
+> `python scripts/update.py --check --json | jq -r '.broken[].ticker'`.
 
 **Golden Rule:** ข้อมูลบริษัทอยู่ใน `data/companies.js` เท่านั้น
 ห้ามแก้ข้อมูลใน `index.html`

@@ -10,6 +10,13 @@ Usage:
   python update.py --remove TICKER      Mark company as active:false
   python update.py --export out.csv     Export to CSV
   python update.py --report             Full quarterly health report
+  python update.py --list               Dump all companies (use with --json)
+
+Structured output (gws-style — agent friendly):
+  Add --json to any read command (check/report/list) to emit machine-readable
+  JSON on stdout instead of the human report, e.g.:
+      python update.py --check --json | jq '.broken[].ticker'
+      python update.py --list  --json | jq '[.companies[] | select(.ir==null)]'
 """
 
 import sys, os, re, json, csv, argparse, datetime
@@ -30,6 +37,15 @@ VALID_SECTORS = {
 }
 
 REQUIRED_FIELDS = ["ticker","name","nameFull","sector","ir","yt","notes","lastVerified","active"]
+
+# ── Structured (JSON) output ──────────────────────────────────────────────────
+# gws-style: read commands emit machine-readable JSON when --json is set, so an
+# LLM agent or `jq` can consume the result without scraping human text.
+JSON_OUT = False
+
+def emit(payload):
+    """Print a structured JSON envelope to stdout (only when --json is active)."""
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 # Auto-generated URL patterns (same as index.html)
 def url_561(ticker):  return f"https://market.sec.or.th/public/idisc/en/companyprofile/listed/{ticker}"
@@ -145,7 +161,8 @@ def cmd_check(args):
     """Validate all active IR URLs and report broken ones."""
     companies = load_companies()
     active = [c for c in companies if c.get('active', True)]
-    print(f"\n🔍 Checking {len(active)} companies (IR links only)...\n")
+    if not JSON_OUT:
+        print(f"\n🔍 Checking {len(active)} companies (IR links only)...\n")
 
     broken, ok, skipped = [], [], []
     for c in active:
@@ -156,12 +173,27 @@ def cmd_check(args):
         status, good, err = check_url(c['ir'])
         if good:
             ok.append(ticker)
-            if args.verbose:
+            if args.verbose and not JSON_OUT:
                 print(f"  ✅ {ticker:<12} {status}  {c['ir']}")
         else:
             broken.append((ticker, c['ir'], status, err))
-            print(f"  ❌ {ticker:<12} {status or '---'}  {c['ir']}")
-            if err: print(f"              {err}")
+            if not JSON_OUT:
+                print(f"  ❌ {ticker:<12} {status or '---'}  {c['ir']}")
+                if err: print(f"              {err}")
+
+    if JSON_OUT:
+        emit({
+            "command": "check",
+            "checked": len(active),
+            "ok": len(ok),
+            "skipped": skipped,
+            "broken": [
+                {"ticker": t, "url": url, "status": code, "error": err}
+                for t, url, code, err in broken
+            ],
+            "pass": len(broken) == 0,
+        })
+        sys.exit(0 if not broken else 1)
 
     print(f"\n{'─'*60}")
     print(f"  ✅ OK:      {len(ok)}")
@@ -286,6 +318,21 @@ def cmd_report(args):
                 missing.append(f"{c['ticker']}.{f}")
 
     today = datetime.date.today().isoformat()
+
+    if JSON_OUT:
+        emit({
+            "command": "report",
+            "date": today,
+            "active": len(active),
+            "inactive": len(inactive),
+            "missingIr": no_ir,
+            "missingYt": no_yt,
+            "sectors": dict(sectors),
+            "missingFields": missing,
+            "healthy": not missing,
+        })
+        return
+
     print(f"\n{'═'*60}")
     print(f"  Thai SET IR Universe — Quarterly Report  {today}")
     print(f"{'═'*60}")
@@ -307,6 +354,44 @@ def cmd_report(args):
     print(f"    3. python update.py --stamp        (update verified dates)")
     print(f"    4. git commit -m 'Q_ YYYY data update'")
     print(f"{'═'*60}\n")
+
+
+# ── List (agent-facing dump) ──────────────────────────────────────────────────
+def cmd_list(args):
+    """Dump companies as structured records, incl. auto-generated SET/SEC URLs.
+
+    Designed for agents/jq: `python update.py --list --json`. Without --json it
+    prints a compact human table.
+    """
+    companies = load_companies()
+    rows = companies if args.all else [c for c in companies if c.get('active', True)]
+
+    def enrich(c):
+        t = c['ticker']
+        return {
+            **c,
+            "links": {
+                "ir":    c.get('ir'),
+                "yt":    c.get('yt'),
+                "sec561": url_561(t),
+                "fs":     url_fs(t),
+                "mda":    url_mda(t),
+                "oppday": url_opp(t),
+            },
+        }
+
+    enriched = [enrich(c) for c in rows]
+
+    if JSON_OUT:
+        emit({"command": "list", "count": len(enriched), "companies": enriched})
+        return
+
+    print(f"\n  {'TICKER':<12}{'SECTOR':<14}{'IR':<6}NAME")
+    print(f"  {'─'*58}")
+    for c in rows:
+        ir_flag = "✅" if c.get('ir') else "—"
+        print(f"  {c['ticker']:<12}{c['sector']:<14}{ir_flag:<6}{c['name']}")
+    print(f"\n  {len(rows)} companies\n")
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -337,12 +422,27 @@ def main():
         ap.print_help()
         sys.exit(0)
 
-    # Normalize: treat '--check' as subcommand 'check' etc.
+    # Hoist --json to this normalization layer, so every subcommand accepts it
+    # without touching the static parser block above.
     args_in = sys.argv[1:]
-    if args_in[0].startswith("--"):
+    json_flag = "--json" in args_in
+    if json_flag:
+        args_in = [a for a in args_in if a != "--json"]
+
+    # Normalize: treat '--check' as subcommand 'check' etc., but leave
+    # '--help'/'-h' (and anything that isn't a real command) untouched.
+    COMMANDS = {"check","stamp","report","list","add","remove","export"}
+    if args_in and args_in[0].startswith("--") and args_in[0][2:] in COMMANDS:
         args_in[0] = args_in[0][2:]
 
+    # Register 'list' here to keep the parser block above identical to main.
+    p_list = sub.add_parser("list", help="Dump companies (use with --json)")
+    p_list.add_argument("--all", action="store_true", help="Include inactive companies")
+
     args = ap.parse_args(args_in)
+
+    global JSON_OUT
+    JSON_OUT = json_flag
 
     dispatch = {
         "check":   cmd_check,
@@ -351,6 +451,7 @@ def main():
         "remove":  cmd_remove,
         "export":  cmd_export,
         "report":  cmd_report,
+        "list":    cmd_list,
     }
     fn = dispatch.get(args.cmd)
     if fn:
