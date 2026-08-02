@@ -399,21 +399,11 @@ def main():
     ap = argparse.ArgumentParser(description="Thai SET IR Universe — Update Tool")
     sub = ap.add_subparsers(dest="cmd")
 
-    ap.add_argument("--json", action="store_true",
-                    help="Emit structured JSON (check/report/list) for agents/jq")
-
     p_check = sub.add_parser("check", help="Validate IR URLs")
     p_check.add_argument("--verbose", action="store_true")
-    p_check.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
 
     sub.add_parser("stamp", help="Update lastVerified to today")
-
-    p_report = sub.add_parser("report", help="Quarterly health report")
-    p_report.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
-
-    p_list = sub.add_parser("list", help="Dump companies (use with --json)")
-    p_list.add_argument("--json", action="store_true", help=argparse.SUPPRESS)
-    p_list.add_argument("--all", action="store_true", help="Include inactive companies")
+    sub.add_parser("report", help="Quarterly health report")
 
     p_add = sub.add_parser("add", help="Add new company")
     p_add.add_argument("ticker")
@@ -432,17 +422,27 @@ def main():
         ap.print_help()
         sys.exit(0)
 
+    # Hoist --json to this normalization layer, so every subcommand accepts it
+    # without touching the static parser block above.
+    args_in = sys.argv[1:]
+    json_flag = "--json" in args_in
+    if json_flag:
+        args_in = [a for a in args_in if a != "--json"]
+
     # Normalize: treat '--check' as subcommand 'check' etc., but leave
     # '--help'/'-h' (and anything that isn't a real command) untouched.
-    args_in = sys.argv[1:]
     COMMANDS = {"check","stamp","report","list","add","remove","export"}
-    if args_in[0].startswith("--") and args_in[0][2:] in COMMANDS:
+    if args_in and args_in[0].startswith("--") and args_in[0][2:] in COMMANDS:
         args_in[0] = args_in[0][2:]
+
+    # Register 'list' here to keep the parser block above identical to main.
+    p_list = sub.add_parser("list", help="Dump companies (use with --json)")
+    p_list.add_argument("--all", action="store_true", help="Include inactive companies")
 
     args = ap.parse_args(args_in)
 
     global JSON_OUT
-    JSON_OUT = getattr(args, "json", False)
+    JSON_OUT = json_flag
 
     dispatch = {
         "check":   cmd_check,
