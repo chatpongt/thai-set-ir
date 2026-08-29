@@ -16,6 +16,14 @@ python -m http.server 8080
 # เปิด http://localhost:8080
 ```
 
+**macOS — เปิดด้วยการดับเบิลคลิก:** ดับเบิลคลิก `scripts/open-dashboard.command`
+มันจะ serve จากเครื่อง (อ่าน `data/companies.js` ล่าสุด) แล้วเปิด browser ให้อัตโนมัติ
+วาง shortcut บน Desktop โดยลากไฟล์ไป Desktop พร้อมกดค้าง ⌘ + ⌥ (สร้าง alias) หรือ:
+```bash
+chmod +x scripts/open-dashboard.command        # ครั้งแรกครั้งเดียว
+ln -s "$(pwd)/scripts/open-dashboard.command" ~/Desktop/
+```
+
 ### Deploy to GitHub Pages (ฟรี, auto-update on push)
 ```bash
 git init
