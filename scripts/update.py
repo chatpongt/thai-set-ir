@@ -4,6 +4,7 @@ Thai SET IR Universe — Quarterly Update Tool
 =============================================
 Usage:
   python update.py --check              Validate all IR URLs (HTTP status)
+  python update.py --check --all-links  Also check SEC 56-1 + SET FS/MD&A/OppDay + YT
   python update.py --check --verbose    Show all URLs including OK ones
   python update.py --stamp              Update lastVerified dates to today
   python update.py --add TICKER "Name" "Sector" "https://ir-url.com"
@@ -157,58 +158,79 @@ def check_url(url, timeout=TIMEOUT):
     return 0, False, last_err
 
 
-def cmd_check(args):
-    """Validate all active IR URLs and report broken ones."""
-    companies = load_companies()
-    active = [c for c in companies if c.get('active', True)]
-    if not JSON_OUT:
-        print(f"\n🔍 Checking {len(active)} companies (IR links only)...\n")
+def company_link_jobs(c, *, all_links: bool):
+    """(kind, url) pairs to validate for one company."""
+    t = c["ticker"]
+    jobs = [("ir", c.get("ir"))]
+    if all_links:
+        jobs.extend(
+            [
+                ("yt", c.get("yt")),
+                ("sec561", url_561(t)),
+                ("fs", url_fs(t)),
+                ("mda", url_mda(t)),
+                ("oppday", url_opp(t)),
+            ]
+        )
+    return jobs
 
-    broken, ok, skipped = [], [], []
+
+def cmd_check(args):
+    """Validate active IR URLs (and optionally generated SET/SEC/YT links)."""
+    companies = load_companies()
+    active = [c for c in companies if c.get("active", True)]
+    all_links = bool(getattr(args, "all_links", False))
+    if not JSON_OUT:
+        scope = "IR + 56-1 + FS + MD&A + OppDay + YT" if all_links else "IR links only"
+        print(f"\n🔍 Checking {len(active)} companies ({scope})...\n")
+
+    broken, ok_rows, skipped = [], [], []
     for c in active:
-        ticker = c['ticker']
-        if not c['ir']:
-            skipped.append(ticker)
-            continue
-        status, good, err = check_url(c['ir'])
-        if good:
-            ok.append(ticker)
-            if args.verbose and not JSON_OUT:
-                print(f"  ✅ {ticker:<12} {status}  {c['ir']}")
-        else:
-            broken.append((ticker, c['ir'], status, err))
-            if not JSON_OUT:
-                print(f"  ❌ {ticker:<12} {status or '---'}  {c['ir']}")
-                if err: print(f"              {err}")
+        ticker = c["ticker"]
+        for kind, url in company_link_jobs(c, all_links=all_links):
+            if not url:
+                skipped.append({"ticker": ticker, "kind": kind})
+                continue
+            status, good, err = check_url(url)
+            if good:
+                ok_rows.append({"ticker": ticker, "kind": kind})
+                if args.verbose and not JSON_OUT:
+                    print(f"  ✅ {ticker:<12} {kind:<7} {status}  {url}")
+            else:
+                broken.append({"ticker": ticker, "kind": kind, "url": url, "status": status, "error": err})
+                if not JSON_OUT:
+                    print(f"  ❌ {ticker:<12} {kind:<7} {status or '---'}  {url}")
+                    if err:
+                        print(f"              {err}")
 
     if JSON_OUT:
-        emit({
-            "command": "check",
-            "checked": len(active),
-            "ok": len(ok),
-            "skipped": skipped,
-            "broken": [
-                {"ticker": t, "url": url, "status": code, "error": err}
-                for t, url, code, err in broken
-            ],
-            "pass": len(broken) == 0,
-        })
+        emit(
+            {
+                "command": "check",
+                "allLinks": all_links,
+                "companies": len(active),
+                "checked": len(ok_rows) + len(broken),
+                "ok": len(ok_rows),
+                "skipped": skipped,
+                "broken": broken,
+                "pass": len(broken) == 0,
+            }
+        )
         sys.exit(0 if not broken else 1)
 
     print(f"\n{'─'*60}")
-    print(f"  ✅ OK:      {len(ok)}")
+    print(f"  ✅ OK:      {len(ok_rows)}")
     print(f"  ❌ Broken:  {len(broken)}")
-    print(f"  ⏭️  Skipped: {len(skipped)} (ir=null)")
+    print(f"  ⏭️  Skipped: {len(skipped)} (empty URL)")
     print(f"{'─'*60}")
 
     if broken:
-        print("\n⚠️  Fix these IR URLs in data/companies.js:")
-        for t, url, code, err in broken:
-            print(f"  {t}: {url}")
-        print("\nThen re-run: python update.py --check")
+        print("\n⚠️  Fix these URLs in data/companies.js (IR/YT) or report SET/SEC pattern bugs:")
+        for row in broken:
+            print(f"  {row['ticker']} {row['kind']}: {row['url']}")
+        print("\nThen re-run: python update.py --check --all-links")
         sys.exit(1)
-    else:
-        print("\n✅ All IR URLs are valid! Safe to push.\n")
+    print("\n✅ All checked URLs are valid! Safe to push.\n")
 
 
 # ── Stamp ──────────────────────────────────────────────────────────────────────
@@ -401,6 +423,11 @@ def main():
 
     p_check = sub.add_parser("check", help="Validate IR URLs")
     p_check.add_argument("--verbose", action="store_true")
+    p_check.add_argument(
+        "--all-links",
+        action="store_true",
+        help="Also validate SEC 56-1 and SET FS/MD&A/OppDay plus YT search URLs",
+    )
 
     sub.add_parser("stamp", help="Update lastVerified to today")
     sub.add_parser("report", help="Quarterly health report")
