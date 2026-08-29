@@ -113,7 +113,7 @@ python scripts/update.py --remove TICKER
 **Prompt ที่ใช้บ่อยกับ Claude Code:**
 ```
 อัพเดท data/companies.js สำหรับ Q2 2026:
-- รัน python scripts/update.py --check แล้วแก้ URL ที่พัง
+- รัน python scripts/update.py --check --all-links แล้วแก้ URL ที่พัง
 - เพิ่มบริษัท [TICKER] เข้า universe
 - stamp และ commit
 ```
