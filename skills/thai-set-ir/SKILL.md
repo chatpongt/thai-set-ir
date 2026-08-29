@@ -40,7 +40,7 @@ it directly. Write commands (`add`, `remove`, `stamp`) mutate `companies.js`.
 
 | Command | What it does | JSON? |
 |---------|--------------|:-----:|
-| `check [--verbose]` | Validate every active IR URL (HTTP status); exit 1 if any broken | ✅ |
+| `check [--verbose] [--all-links]` | Validate every active IR URL (HTTP status); `--all-links` also hits SEC 56-1 + SET FS/MD&A/OppDay + YT; exit 1 if any broken | ✅ |
 | `report` | Quarterly health report: counts, sector breakdown, missing fields | ✅ |
 | `list [--all]` | Dump company records incl. auto-generated SEC/SET links (`--all` = include inactive) | ✅ |
 | `add TICKER "Name" "Sector" "URL"` | Add a new company (URL may be `null`) | — |

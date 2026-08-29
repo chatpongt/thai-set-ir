@@ -33,8 +33,8 @@ git push -u origin main
 ## 🔄 Quarterly Update (ทำทุกไตรมาส)
 
 ```bash
-# 1. ตรวจสอบ URL ที่พัง
-python scripts/update.py --check
+# 1. ตรวจสอบ URL ที่พัง (IR + 56-1 + SET FS/MD&A/OppDay + YT)
+python scripts/update.py --check --all-links
 
 # 2. แก้ไข data/companies.js ตาม output
 
