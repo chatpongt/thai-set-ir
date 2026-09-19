@@ -76,11 +76,13 @@ Write-Host ''
 
 # ── Make sure the canonical copy exists ──────────────────────────────────────
 $keeper = $found | Where-Object { $_ -ieq $Dest } | Select-Object -First 1
+$movedSrc = $null
 
 if ($keeper) {
     Write-Host "มี copy อยู่ที่ปลายทางแล้ว: $keeper" -ForegroundColor Green
 } elseif ($found.Count -gt 0) {
     $src = $found[0]
+    $movedSrc = $src
     Write-Host "จะย้าย $src -> $Dest"
     if ($Apply) {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Dest) | Out-Null
@@ -104,6 +106,9 @@ $deleted = 0
 $skipped = 0
 foreach ($dir in @($found)) {
     if ($dir -ieq $Dest) { continue }
+    # In a dry run the move source is still in $found; listing it for deletion
+    # too would contradict the move printed above.
+    if ($movedSrc -and $dir -ieq $movedSrc) { continue }
 
     # Refuse to delete work that exists nowhere else.
     $reasons = @()

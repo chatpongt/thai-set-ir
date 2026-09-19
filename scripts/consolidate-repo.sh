@@ -101,6 +101,7 @@ echo
 
 # ── 3. Make sure the canonical copy exists ───────────────────────────────────
 KEEPER=""
+MOVED_SRC=""
 for d in ${FOUND+"${FOUND[@]}"}; do
   [ "$d" = "$HOME_DIR" ] && KEEPER="$d"
 done
@@ -110,6 +111,7 @@ if [ -n "$KEEPER" ]; then
 elif [ ${#FOUND[@]} -gt 0 ]; then
   SRC="${FOUND[0]}"
   echo "📦 จะย้าย $SRC → $HOME_DIR"
+  MOVED_SRC="$SRC"
   if [ "$APPLY" -eq 1 ]; then
     mkdir -p "$(dirname "$HOME_DIR")"
     mv "$SRC" "$HOME_DIR"
@@ -134,6 +136,7 @@ SKIPPED=0
 DELETED=0
 for d in ${FOUND+"${FOUND[@]}"}; do
   [ "$d" = "$HOME_DIR" ] && continue
+  [ -n "$MOVED_SRC" ] && [ "$d" = "$MOVED_SRC" ] && continue
 
   # Refuse to delete work that exists nowhere else.
   dirty=""
