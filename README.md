@@ -57,6 +57,40 @@ git push
 
 ---
 
+## 💾 เก็บงานไว้ไดรฟ์เดียว (One Copy Per Machine)
+
+งานชุดนี้ควรมี working copy **ชุดเดียวต่อเครื่อง** เพื่อไม่ให้แก้ `data/companies.js`
+คนละที่แล้วชนกัน ตำแหน่งมาตรฐานคือ:
+
+| เครื่อง | ที่อยู่ |
+|---------|---------|
+| Mac     | ไดรฟ์ `1 TB` → `/Volumes/<1TB>/thai-set-ir` |
+| PC      | `D:\thai-set-ir` |
+
+สคริปต์ด้านล่างจะกวาดหา copy ทุกชุดในเครื่อง ย้าย/clone ชุดหลักไปไว้ที่ปลายทาง
+แล้วลบ copy ที่อยู่ไดรฟ์อื่นทิ้ง
+
+**macOS**
+```bash
+bash scripts/consolidate-repo.sh            # dry run — ดูแผนก่อน ยังไม่ลบอะไร
+bash scripts/consolidate-repo.sh --apply    # ทำจริง
+```
+หาไดรฟ์เองจาก `/Volumes` ที่ชื่อมี `1TB` / `1 TB` — ถ้าชื่อไดรฟ์ไม่ตรง ระบุเองได้:
+`--home /Volumes/ชื่อไดรฟ์/thai-set-ir`
+
+**Windows (PowerShell)**
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\consolidate-repo.ps1
+powershell -ExecutionPolicy Bypass -File scripts\consolidate-repo.ps1 -Apply
+```
+เปลี่ยนปลายทางด้วย `-Dest 'E:\thai-set-ir'`
+
+> ⚠️ **ตัวกันพลาด:** copy ที่ยังมีไฟล์ไม่ได้ commit หรือมี commit ที่ยังไม่ push
+> จะถูก **ข้าม** ไม่ลบ พร้อมบอกว่าค้างอะไรอยู่ — ให้ push ก่อนแล้วรันซ้ำ
+> ถ้าตั้งใจจะทิ้งงานนั้นจริง ๆ ค่อยเติม `--force` (macOS) / `-Force` (Windows)
+
+---
+
 ## 📁 Project Structure
 
 ```
@@ -65,7 +99,9 @@ thai-set-ir/
 ├── data/
 │   └── companies.js    ← ✏️ แก้ตรงนี้เท่านั้น
 ├── scripts/
-│   ├── update.py       ← Quarterly maintenance tool
+│   ├── update.py             ← Quarterly maintenance tool
+│   ├── consolidate-repo.sh   ← เก็บงานไว้ไดรฟ์เดียว (macOS)
+│   ├── consolidate-repo.ps1  ← เก็บงานไว้ไดรฟ์เดียว (Windows)
 │   └── requirements.txt
 ├── .github/
 │   └── workflows/
