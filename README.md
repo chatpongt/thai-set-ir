@@ -9,7 +9,15 @@ Web dashboard สำหรับติดตาม Investor Relations ของ�
 
 ## 🚀 Quick Start
 
-### Local Preview (ไม่ต้อง install อะไร)
+### 🖥️ เปิดบน PC (Windows) — ดับเบิลคลิกอย่างเดียว
+1. ดาวน์โหลดโปรเจกต์ (GitHub → **Code → Download ZIP**) แล้วแตกไฟล์
+2. ดับเบิลคลิก **`Open-Dashboard-Windows.bat`** → เปิดในเบราว์เซอร์ทันที ไม่ต้องลงอะไรเพิ่ม
+3. อยากมีไอคอนบน Desktop: ดับเบิลคลิก `scripts\windows-desktop-shortcut.bat` ครั้งเดียว จะได้ไอคอน **Thai SET IR**
+
+> จะดับเบิลคลิก `index.html` ตรงๆ ก็ได้ ใช้ได้ทั้ง Windows, macOS และ Linux แบบออฟไลน์
+> (ต้องเก็บ `index.html` กับโฟลเดอร์ `data/` ไว้ด้วยกัน)
+
+### Local Preview ผ่าน server (สำหรับนักพัฒนา)
 ```bash
 # Python 3
 python -m http.server 8080
@@ -62,10 +70,14 @@ git push
 ```
 thai-set-ir/
 ├── index.html          ← Web app (ไม่ต้องแตะบ่อย)
+├── Open-Dashboard-Windows.bat ← 🖥️ ดับเบิลคลิกเปิดบน Windows
 ├── data/
 │   └── companies.js    ← ✏️ แก้ตรงนี้เท่านั้น
 ├── scripts/
 │   ├── update.py       ← Quarterly maintenance tool
+│   ├── audit_filings.py ← ตรวจไฟล์งบ/MD&A ใน Drive ว่าครบทุกงวด
+│   ├── open-dashboard.command      ← 🍎 ดับเบิลคลิกเปิดบน macOS
+│   ├── windows-desktop-shortcut.bat ← สร้างไอคอนบน Desktop (Windows)
 │   └── requirements.txt
 ├── .github/
 │   └── workflows/
@@ -78,14 +90,13 @@ thai-set-ir/
 
 ## ✨ Features
 
-- 🔍 **Search** ด้วย Ticker หรือชื่อบริษัท
-- 🏷️ **Filter** ตาม Sector (13 sectors)
-- 🔗 **7 links** ต่อบริษัท: IR · 56-1 · FS · MD&A · OppDay SET · OppDay YT
-- 📥 **Export CSV** พร้อมใช้
-- 📅 **Last Verified** date แสดงทุกแถว
-- ⛔ **Delisted toggle** — ซ่อน/แสดงบริษัทที่ออกจาก SET
-- 🔃 **Sortable** Ticker และ Sector
-- 📱 **Mobile responsive**
+- 🧒 **ใช้ง่ายแม้เด็ก**: วิธีใช้ 3 ขั้นบนหัวเว็บ, ปุ่มใหญ่ 6 สีพร้อมชื่อภาษาไทย, หน้า "❓ ปุ่มแต่ละสีคืออะไร" อธิบายแบบง่ายๆ
+- 🔍 **ค้นหา** ด้วย Ticker, ชื่อบริษัท หรือคำไทย (เช่น "ธนาคาร", "โรงพยาบาล")
+- 🗂️ **หมวดแบบรูปภาพ** สร้างจากข้อมูลอัตโนมัติ พร้อมจำนวนบริษัท (มือถือ: ปัดซ้าย-ขวา)
+- ⭐ **ที่ฉันชอบ** — กดดาวเก็บบริษัทไว้ (จำไว้ในเครื่องนั้น)
+- 🃏 / 📋 **การ์ด หรือ ตาราง** (ตารางเรียงตาม ticker / หมวด / วันที่ตรวจ ได้)
+- 🔗 ปุ่มต่อบริษัท: 🏠 เว็บบริษัท (IR) · 📘 รายงานประจำปี (56-1) · 💰 งบการเงิน · 💬 ผู้บริหารอธิบาย (MD&A) · 🎤 งานพบนักลงทุน (Opp Day) · ▶️ วิดีโอ
+- 🌙 โหมดมืด · 📥 ดาวน์โหลด CSV · ⛔ แสดง/ซ่อนหุ้นที่ออกจากตลาด · 📱 ใช้บนมือถือได้
 
 ---
 
