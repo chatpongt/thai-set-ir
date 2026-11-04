@@ -1,0 +1,49 @@
+{
+  "_doc": "Rules for scripts/audit_filings.py. Edit this file (not the script) when a company's fiscal year, SEC code or a known not-filed period changes. Every exemption MUST carry a reason.",
+
+  "years": [2024, 2025, 2026],
+  "periods": ["FY", "Q1", "Q2", "Q3"],
+  "required_types": ["FS", "MDA"],
+  "optional_types": ["56-1"],
+  "preferred_lang": "en",
+
+  "due_days": { "Q": 45, "FY": 60 },
+  "filing_grace_days": 45,
+  "min_size_bytes": { "FS": 20000, "MDA": 20000, "56-1": 100000 },
+
+  "_fiscal_doc": "Default fiscal year = calendar year (fye_month 12). label 'end' = FY named after the calendar year it ENDS in (AOT FY2024 = Oct 2023-Sep 2024); 'start' = named after the year it STARTS in (AEONTS FY2024 = Mar 2024-Feb 2025). Derived from the due_date column of filings-index.",
+  "fiscal": {
+    "AEONTS": { "fye_month": 2, "label": "start" },
+    "AOT":    { "fye_month": 9, "label": "end" },
+    "FTREIT": { "fye_month": 9, "label": "end" },
+    "EPG":    { "fye_month": 3, "label": "end" }
+  },
+
+  "_sec_code_doc": "Extra SEC company codes (the 4 digits after dat/news/YYYYMM/ in FILEID) that are legitimate for a ticker, e.g. a pre-merger entity.",
+  "sec_code_aliases": {
+    "CPAXT": ["0429", "1887"]
+  },
+
+  "_name_doc": "Extra strings that identify the company inside a document (checked case-insensitively, in addition to companies.js nameFull and the ticker).",
+  "name_aliases": {
+    "AEONTS": ["AEON Thana Sinsap"],
+    "CPAXT":  ["CP Axtra", "Siam Makro"],
+    "TTB":    ["TMBThanachart"]
+  },
+
+  "_exempt_doc": "Slots that legitimately have no filing. Key = TICKER, value = list of {year, period?, type?, reason}. Omitted period/type = all.",
+  "exempt": {
+    "AXTRART": [
+      { "year": 2024, "period": "Q1", "reason": "app status=not_applicable (no Q1-Q3 2024 filing for the new entity)" },
+      { "year": 2024, "period": "Q2", "reason": "app status=not_applicable" },
+      { "year": 2024, "period": "Q3", "reason": "app status=not_applicable" }
+    ],
+    "NKT": [
+      { "year": 2024, "period": "Q1", "reason": "SEC NKT listing goes FY2023 -> Q3 2024; no Q1/Q2 2024 FS or MD&A" },
+      { "year": 2024, "period": "Q2", "reason": "SEC NKT listing goes FY2023 -> Q3 2024; no Q1/Q2 2024 FS or MD&A" }
+    ],
+    "TFFIF": [
+      { "year": 2024, "type": "MDA", "reason": "Infrastructure fund: SEC lists no MD&A for TFFIF" }
+    ]
+  }
+}

@@ -17,6 +17,8 @@ thai-set-ir-web/
 │   └── companies.js            ← ✏️ ONLY edit this file for data updates
 ├── scripts/
 │   ├── update.py               ← URL validator & quarterly update tool
+│   ├── audit_filings.py        ← ตรวจไฟล์ FS/MD&A ใน Drive GROKBOT/filings ว่าครบ & ถูกงวด
+│   ├── filings_rules.json      ← กฎ: ปีบัญชีไม่ตรงปฏิทิน, งวดที่ยกเว้น, SEC code aliases
 │   └── requirements.txt
 ├── skills/
 │   └── thai-set-ir/
@@ -64,6 +66,15 @@ python update.py --add TICKER "Company Name" "Sector" "https://ir-url.com"
 ```bash
 python update.py --remove TICKER
 ```
+
+### Step 4b: Audit filings ใน Drive (GROKBOT/filings)
+```bash
+# export ชีต filings-index เป็น CSV ก่อน แล้ว:
+python scripts/audit_filings.py --index filings-index.csv --md audit.md --csv issues.csv
+# ถ้ามีสำเนาโฟลเดอร์ filings ในเครื่อง (Drive for desktop) เพิ่ม --root เพื่อตรวจ sha256 + เนื้อหา
+```
+ต้องไม่มี error ใหม่ ถ้างวดไหนไม่มีไฟล์จริง (เช่น บริษัทเพิ่ง listed) ให้ใส่ใน `exempt` ของ
+`scripts/filings_rules.json` พร้อมเหตุผล ห้ามลบแถวออกจาก index
 
 ### Step 5: Stamp verified date & push
 ```bash
