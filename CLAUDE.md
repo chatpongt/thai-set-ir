@@ -12,7 +12,8 @@ Dashboard สำหรับ Jon's RSI Cluster System ติดตาม Investo
 thai-set-ir-web/
 ├── CLAUDE.md                   ← You are here
 ├── README.md                   ← Setup & deployment guide
-├── index.html                  ← Main web app (DO NOT edit data here)
+├── index.html                  ← Main web app (DO NOT edit data here) — เปิดตรงๆ แบบ file:// ได้
+├── Open-Dashboard-Windows.bat  ← ดับเบิลคลิกเปิดบน Windows (scripts/windows-desktop-shortcut.bat = ไอคอน Desktop)
 ├── data/
 │   └── companies.js            ← ✏️ ONLY edit this file for data updates
 ├── scripts/
@@ -127,13 +128,14 @@ URL เหล่านี้ generate อัตโนมัติจาก ticke
 
 ### เพิ่ม field ใหม่ (เช่น targetPrice, analystRating)
 1. เพิ่ม field ใน schema ของ `data/companies.js` ทุก record
-2. เพิ่ม column ใน `index.html` → function `renderRow()` และ `<thead>`
+2. แสดงใน `index.html` → `renderCards()` (การ์ด) และ `renderTable()` + `<thead>` (ตาราง)
+   ถ้าเป็นลิงก์ใหม่ ให้เพิ่มใน array `ACTIONS` (มีคำอธิบายภาษาง่ายใน `help`) แล้วปุ่มจะขึ้นทั้งการ์ด ตาราง และหน้าอธิบาย
 3. อัพเดท `update.py` → `REQUIRED_FIELDS` list
 
 ### เพิ่ม sector ใหม่
-1. เพิ่ม entry ใน `SECTOR_COLORS` object ใน `index.html`
-2. เพิ่มปุ่ม filter ใน `<div id="fbar">` ใน `index.html`
-3. เพิ่ม CSS class `.s-NewSector` ใน `index.html`
+1. เพิ่มใน `VALID_SECTORS` ของ `update.py` (และรายการ Valid Sectors ด้านบน)
+2. เพิ่ม entry ใน `SECTOR_INFO` ใน `index.html` (`e` = emoji, `th` = ชื่อไทย, `c` = สี, `kid` = คำอธิบายง่ายๆ)
+   ปุ่มหมวดสร้างจากข้อมูลอัตโนมัติ ถ้าลืมข้อ 2 จะแสดงเป็น 📦 พร้อมชื่ออังกฤษ
 
 ### Export ข้อมูลเป็น CSV
 กดปุ่ม "📥 Export CSV" ใน UI, หรือรัน:

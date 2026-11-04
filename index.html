@@ -3,219 +3,326 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Thai SET · IR Universe</title>
+<title>Thai SET IR Universe</title>
+<meta name="description" content="หาข้อมูลบริษัทหุ้นไทยได้ง่ายๆ: เว็บนักลงทุนสัมพันธ์ รายงานประจำปี งบการเงิน และงานพบนักลงทุน">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;800&display=swap" rel="stylesheet">
 <script src="data/companies.js"></script>
 <style>
+/* ── TOKENS ──────────────────────────────────────────────────────────────── */
 :root {
-  --bg:      #eef1f5;
-  --surface: #ffffff;
-  --border:  #e2e8f0;
-  --text:    #1a202c;
-  --muted:   #718096;
-  --accent:  #2b6cb0;
-  --hdr1:    #0f172a;
-  --hdr2:    #1e3a5f;
+  --bg:        #f4f6fb;
+  --surface:   #ffffff;
+  --surface-2: #f8fafc;
+  --border:    #e3e8f0;
+  --text:      #172033;
+  --muted:     #5b6678;
+  --accent:    #2563eb;
+  --accent-fg: #ffffff;
+  --hero1:     #1d4ed8;
+  --hero2:     #7c3aed;
+  --star:      #f59e0b;
+  --shadow:    0 1px 2px rgba(15,23,42,.06), 0 4px 14px rgba(15,23,42,.06);
+  --radius:    18px;
   color-scheme: light;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 13px; }
-
-/* ── HEADER ─────────────────────────────── */
-.hdr { background: linear-gradient(135deg, var(--hdr1) 0%, var(--hdr2) 100%); color: #fff; padding: 20px 28px 18px; }
-.hdr-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
-.hdr h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
-.hdr-sub { font-size: 11px; color: #90cdf4; margin-top: 4px; }
-.hdr-actions { display: flex; gap: 8px; align-items: center; }
-.hdr-badge { background: rgba(16,185,129,.2); border: 1px solid rgba(16,185,129,.4); color: #6ee7b7; font-size: 10px; font-weight: 700; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
-.btn-export { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); color: #e2e8f0; font-size: 11px; font-weight: 700; padding: 5px 13px; border-radius: 8px; cursor: pointer; transition: all .15s; white-space: nowrap; }
-.btn-export:hover { background: rgba(255,255,255,.2); }
-.stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
-.stat { background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 8px 16px; text-align: center; min-width: 70px; }
-.stat-v { font-size: 20px; font-weight: 800; color: #f0fff4; line-height: 1; }
-.stat-l { font-size: 9px; text-transform: uppercase; letter-spacing: .6px; color: #90cdf4; margin-top: 3px; }
-
-/* ── CONTROLS ────────────────────────────── */
-.ctrl { background: var(--surface); padding: 11px 28px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; position: sticky; top: 0; z-index: 200; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
-.sw { position: relative; flex: 1; min-width: 160px; max-width: 260px; }
-.sw input { width: 100%; padding: 7px 10px 7px 30px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; background: #f7fafc; outline: none; transition: all .15s; }
-.sw input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(43,108,176,.1); }
-.sw-ico { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 13px; }
-.fwrap { display: flex; gap: 5px; flex-wrap: wrap; }
-.fb { padding: 5px 12px; border-radius: 20px; border: 1.5px solid var(--border); background: #fff; font-size: 11px; font-weight: 600; cursor: pointer; color: #4a5568; transition: all .15s; white-space: nowrap; }
-.fb:hover { border-color: var(--accent); color: var(--accent); }
-.fb.on { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
-.toggle-inactive { font-size: 11px; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; padding: 5px 10px; border: 1.5px solid var(--border); border-radius: 20px; background: #fff; }
-.toggle-inactive.on { background: #fed7d7; border-color: #fc8181; color: #c53030; }
-.rc { font-size: 11px; color: var(--muted); margin-left: auto; font-weight: 600; white-space: nowrap; }
-
-/* ── TABLE WRAPPER ───────────────────────── */
-.tw { padding: 14px 28px 40px; overflow-x: auto; }
-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,.07); }
-thead th { background: #f7fafc; padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); border-bottom: 2px solid var(--border); white-space: nowrap; }
-th.sort { cursor: pointer; user-select: none; }
-th.sort:hover { color: var(--accent); }
-td { padding: 9px 12px; border-bottom: 1px solid #f0f4f8; vertical-align: middle; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: #f5f8ff; }
-tr.inactive td { opacity: .45; }
-
-/* ── TICKER ──────────────────────────────── */
-.tk { display: inline-block; font-family: 'SF Mono','Fira Code',monospace; font-weight: 800; font-size: 11px; padding: 3px 8px; border-radius: 5px; background: #1a202c; color: #fff; letter-spacing: .3px; min-width: 58px; text-align: center; }
-.tk.inactive { background: #a0aec0; }
-
-/* ── SECTOR BADGES ───────────────────────── */
-.sb { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
-.s-Banking    { background:#dbeafe; color:#1e40af; }
-.s-Energy     { background:#ffedd5; color:#9a3412; }
-.s-Healthcare { background:#dcfce7; color:#166534; }
-.s-Property   { background:#f3e8ff; color:#6b21a8; }
-.s-REIT       { background:#ede9fe; color:#5b21b6; }
-.s-Commerce   { background:#fef9c3; color:#854d0e; }
-.s-Finance    { background:#ccfbf1; color:#115e59; }
-.s-Industrial { background:#f1f5f9; color:#475569; }
-.s-Food       { background:#fce7f3; color:#9d174d; }
-.s-Hospitality{ background:#fff7ed; color:#9a3412; }
-.s-Telecom    { background:#e0f2fe; color:#075985; }
-.s-Tech       { background:#eef2ff; color:#3730a3; }
-.s-Transport  { background:#fef3c7; color:#78350f; }
-.s-Utilities  { background:#d1fae5; color:#064e3b; }
-.s-Media      { background:#fdf4ff; color:#7e22ce; }
-.s-Insurance  { background:#eff6ff; color:#1e3a8a; }
-.s-Education  { background:#f0fdf4; color:#14532d; }
-.s-Infra      { background:#f8fafc; color:#334155; }
-
-/* ── LINK BUTTONS ────────────────────────── */
-.bgroup { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
-.lb { display: inline-flex; align-items: center; gap: 3px; padding: 4px 8px; border-radius: 5px; font-size: 10px; font-weight: 700; text-decoration: none; border: 1.5px solid; cursor: pointer; transition: all .12s; white-space: nowrap; line-height: 1.3; }
-.lb-ir   { color:#2b6cb0; border-color:#bee3f8; background:#fff; }
-.lb-ir:hover   { background:#ebf8ff; border-color:#2b6cb0; }
-.lb-561  { color:#744210; border-color:#fbd38d; background:#fff; }
-.lb-561:hover  { background:#fefcbf; border-color:#d69e2e; }
-.lb-fs   { color:#276749; border-color:#9ae6b4; background:#fff; }
-.lb-fs:hover   { background:#f0fff4; border-color:#276749; }
-.lb-mda  { color:#553c9a; border-color:#d6bcfa; background:#fff; }
-.lb-mda:hover  { background:#faf5ff; border-color:#553c9a; }
-.lb-set  { color:#1a365d; border-color:#90cdf4; background:#fff; }
-.lb-set:hover  { background:#ebf8ff; border-color:#1a365d; }
-.lb-yt   { color:#c53030; border-color:#feb2b2; background:#fff; }
-.lb-yt:hover   { background:#fff5f5; border-color:#c53030; }
-.lb-na   { color:#cbd5e0; border-color:#e2e8f0; background:#f7fafc; cursor:default; pointer-events:none; }
-
-/* ── NOTES ───────────────────────────────── */
-.note-badge { font-size: 10px; color: #d69e2e; background: #fefcbf; border-radius: 4px; padding: 1px 5px; font-weight: 600; }
-
-/* ── VERIFIED BADGE ──────────────────────── */
-.vdate { font-size: 10px; color: #a0aec0; font-family: monospace; }
-
-/* ── EMPTY STATE ─────────────────────────── */
-.empty { text-align: center; padding: 60px 24px; display: none; }
-.empty-ico { font-size: 44px; margin-bottom: 12px; }
-.empty-txt { color: var(--muted); font-size: 15px; }
-
-/* ── SOURCE NOTES ────────────────────────── */
-.snote { background: var(--surface); border-top: 1px solid var(--border); padding: 10px 28px; font-size: 10px; color: #a0aec0; line-height: 1.8; }
-.snote strong { color: #718096; }
-
-/* ── FOOTER ──────────────────────────────── */
-.ftr { text-align: center; padding: 8px 28px 20px; font-size: 10px; color: #a0aec0; }
-
-/* ── MOBILE ──────────────────────────────── */
-@media (max-width: 640px) {
-  .hdr, .ctrl, .tw { padding-left: 14px; padding-right: 14px; }
-  .hdr h1 { font-size: 16px; }
-  .stats { gap: 7px; }
-  .stat { padding: 6px 10px; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1424; --surface: #161e33; --surface-2: #1c2640; --border: #2a3654;
+    --text: #e8edf7; --muted: #a3afc7; --accent: #60a5fa; --accent-fg: #0b1220;
+    --hero1: #1e3a8a; --hero2: #5b21b6;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
 }
+:root[data-theme="dark"] {
+  --bg: #0e1424; --surface: #161e33; --surface-2: #1c2640; --border: #2a3654;
+  --text: #e8edf7; --muted: #a3afc7; --accent: #60a5fa; --accent-fg: #0b1220;
+  --hero1: #1e3a8a; --hero2: #5b21b6;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Leelawadee UI', Tahoma, sans-serif;
+  background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.5;
+}
+a { color: inherit; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ── HERO ────────────────────────────────────────────────────────────────── */
+.hero { background: linear-gradient(135deg, var(--hero1), var(--hero2)); color: #fff; padding: 26px 0 30px; }
+.hero-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.hero h1 { font-size: clamp(24px, 4vw, 34px); font-weight: 800; line-height: 1.2; }
+.hero p  { font-size: 17px; opacity: .92; margin-top: 6px; }
+.hero-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill-btn { background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.35); color: #fff; font-weight: 600; font-size: 15px; padding: 9px 16px; border-radius: 999px; cursor: pointer; min-height: 44px; }
+.pill-btn:hover { background: rgba(255,255,255,.26); }
+
+/* 3 steps */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+.step { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); border-radius: 16px; padding: 12px 14px; display: flex; gap: 10px; align-items: center; }
+.step b { flex: none; width: 34px; height: 34px; border-radius: 50%; background: #fff; color: var(--hero1); display: grid; place-items: center; font-weight: 800; font-size: 18px; }
+.step span { font-size: 15px; font-weight: 600; }
+@media (max-width: 720px) { .steps { grid-template-columns: 1fr; } }
+
+/* ── SEARCH ──────────────────────────────────────────────────────────────── */
+.search-bar { position: sticky; top: 0; z-index: 20; background: var(--bg); padding: 14px 0 10px; }
+.search { position: relative; }
+.search input {
+  width: 100%; font: inherit; font-size: 19px; padding: 15px 52px 15px 54px;
+  border: 2px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text);
+  box-shadow: var(--shadow); outline: none;
+}
+.search input:focus { border-color: var(--accent); }
+.search .ico { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 22px; pointer-events: none; }
+.search .clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--surface-2); cursor: pointer; font-size: 18px; display: none; }
+.search.has-text .clear { display: block; }
+
+/* ── CATEGORY TILES ──────────────────────────────────────────────────────── */
+.sec-title { font-size: 20px; font-weight: 800; margin: 18px 0 10px; display: flex; align-items: center; gap: 8px; }
+.cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.cat {
+  --c: #64748b;
+  background: var(--surface); border: 2px solid var(--border); border-radius: 16px; padding: 12px 10px;
+  cursor: pointer; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-height: 96px; transition: transform .12s, border-color .12s; box-shadow: var(--shadow);
+}
+.cat:hover { transform: translateY(-2px); border-color: var(--c); }
+.cat .e { font-size: 30px; line-height: 1.1; }
+.cat .t { font-weight: 700; font-size: 15px; }
+.cat .n { font-size: 13px; color: var(--muted); }
+.cat[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); }
+.cat[aria-pressed="true"] .t { color: var(--c); }
+
+/* ── TOOLBAR ─────────────────────────────────────────────────────────────── */
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 20px 0 12px; }
+.count { font-size: 18px; font-weight: 800; margin-right: auto; }
+.count small { font-weight: 400; color: var(--muted); font-size: 15px; }
+.seg { display: inline-flex; background: var(--surface); border: 2px solid var(--border); border-radius: 999px; padding: 3px; }
+.seg button { border: 0; background: transparent; padding: 7px 14px; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 15px; min-height: 38px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.chk { display: inline-flex; align-items: center; gap: 6px; font-size: 15px; color: var(--muted); cursor: pointer; min-height: 44px; }
+.chk input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+/* ── CARDS ───────────────────────────────────────────────────────────────── */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.card {
+  --c: #64748b;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column;
+}
+.card.off { opacity: .55; }
+.card-head { padding: 14px 16px 12px; border-top: 6px solid var(--c); display: flex; gap: 12px; align-items: flex-start; }
+.card-emoji { flex: none; width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-size: 28px; background: color-mix(in srgb, var(--c) 15%, var(--surface)); }
+.card-id { flex: 1; min-width: 0; }
+.tk { font-size: 22px; font-weight: 800; letter-spacing: .3px; line-height: 1.15; }
+.nm { font-size: 15px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.chip { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); }
+.chip.gone { color: #b91c1c; background: #fee2e2; margin-left: 4px; }
+.star { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; font-size: 24px; cursor: pointer; filter: grayscale(1); opacity: .45; }
+.star[aria-pressed="true"] { filter: none; opacity: 1; }
+.star:hover { opacity: 1; }
+.note { margin: 0 16px 8px; font-size: 13px; background: #fef3c7; color: #78350f; padding: 6px 10px; border-radius: 10px; }
+
+.acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 4px 14px 14px; }
+.act {
+  --k: #2563eb;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center;
+  min-height: 74px; padding: 8px 4px; border-radius: 14px; text-decoration: none;
+  background: color-mix(in srgb, var(--k) 10%, var(--surface)); border: 2px solid color-mix(in srgb, var(--k) 25%, transparent);
+  transition: transform .1s, background .1s;
+}
+.act:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--k) 18%, var(--surface)); border-color: var(--k); }
+.act .e { font-size: 24px; line-height: 1; }
+.act .t { font-size: 13.5px; font-weight: 700; line-height: 1.25; color: var(--text); }
+.act .s { font-size: 11px; color: var(--muted); }
+.act.na { filter: grayscale(1); opacity: .45; pointer-events: none; }
+
+/* button colours (shared by cards, table and help) */
+.k-ir  { --k: #2563eb; }
+.k-561 { --k: #d97706; }
+.k-fs  { --k: #16a34a; }
+.k-mda { --k: #7c3aed; }
+.k-opp { --k: #0891b2; }
+.k-yt  { --k: #dc2626; }
+
+/* ── TABLE VIEW ──────────────────────────────────────────────────────────── */
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; min-width: 860px; }
+thead th { position: sticky; top: 0; background: var(--surface-2); text-align: left; font-size: 14px; color: var(--muted); padding: 12px; border-bottom: 2px solid var(--border); white-space: nowrap; }
+th button { border: 0; background: none; font-weight: 700; cursor: pointer; color: inherit; font-size: 14px; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--surface-2); }
+tr.off td { opacity: .5; }
+.tk-s { font-weight: 800; font-size: 16px; }
+.mini { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap;
+  background: color-mix(in srgb, var(--k) 10%, var(--surface)); border: 1.5px solid color-mix(in srgb, var(--k) 30%, transparent); }
+.mini:hover { border-color: var(--k); }
+.mini.na { filter: grayscale(1); opacity: .45; pointer-events: none; }
+.minis { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ── EMPTY ───────────────────────────────────────────────────────────────── */
+.empty { text-align: center; padding: 50px 16px; display: none; }
+.empty .e { font-size: 56px; }
+.empty p { font-size: 18px; margin: 8px 0 16px; }
+.btn { background: var(--accent); color: var(--accent-fg); border: 0; padding: 12px 22px; border-radius: 999px; font-weight: 700; font-size: 16px; cursor: pointer; min-height: 44px; }
+.btn.ghost { background: var(--surface); color: var(--text); border: 2px solid var(--border); }
+
+/* ── HELP ────────────────────────────────────────────────────────────────── */
+.help { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.help-item { background: var(--surface); border: 1px solid var(--border); border-left: 6px solid var(--k); border-radius: 14px; padding: 12px 14px; display: flex; gap: 12px; }
+.help-item .e { font-size: 30px; line-height: 1; }
+.help-item h3 { font-size: 16px; }
+.help-item p { font-size: 14.5px; color: var(--muted); }
+
+dialog { margin: auto; border: 0; border-radius: 22px; padding: 0; max-width: 680px; width: calc(100% - 32px); background: var(--surface); color: var(--text); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+dialog::backdrop { background: rgba(15,23,42,.55); }
+.dlg-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+.dlg-head h2 { font-size: 20px; }
+.dlg-body { padding: 16px 20px 20px; max-height: 70vh; overflow: auto; }
+.dlg-body .help { grid-template-columns: 1fr; }
+.x { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--surface-2); font-size: 20px; cursor: pointer; }
+
+/* ── FOOTER ──────────────────────────────────────────────────────────────── */
+footer { margin-top: 34px; padding: 22px 0 36px; border-top: 1px solid var(--border); color: var(--muted); font-size: 14px; }
+footer .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+details { margin-top: 14px; }
+summary { cursor: pointer; font-weight: 700; }
+details p, details li { font-size: 13px; margin-top: 6px; word-break: break-all; }
+details ul { padding-left: 18px; }
+code { font-family: ui-monospace, 'SF Mono', Consolas, monospace; font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 6px; }
+.badge-ok { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #15803d; background: #dcfce7; border-radius: 999px; padding: 4px 12px; }
+
+@media (max-width: 720px) {
+  /* categories become one swipeable row so the cards stay close to the top */
+  .cats { display: flex; overflow-x: auto; scroll-snap-type: x proximity; padding: 2px 2px 10px; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+  .cat { flex: 0 0 108px; scroll-snap-align: start; min-height: 88px; padding: 10px 4px; }
+  .cat .e { font-size: 26px; }
+  .cat .t { font-size: 13.5px; }
+  .sec-title::after { content: '← ปัดเพื่อดูเพิ่ม →'; font-size: 13px; font-weight: 400; color: var(--muted); margin-left: auto; }
+  .sec-title.nohint::after { content: none; }
+  .hero { padding: 18px 0 20px; }
+  .step { padding: 8px 12px; }
+  .step b { width: 28px; height: 28px; font-size: 15px; }
+  .step span { font-size: 14px; }
+}
+@media (max-width: 420px) {
+  .grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="hdr">
-  <div class="hdr-top">
-    <div>
-      <h1>🇹🇭 Thai SET · IR Universe</h1>
-      <div class="hdr-sub">Investor Relations · 56-1 One Report · Financial Statements · MD&amp;A · Opportunity Day</div>
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-top">
+      <div>
+        <h1>📈 หาข้อมูลบริษัทหุ้นไทย</h1>
+        <p>Thai SET IR Universe · กดปุ่มเดียว ไปถึงรายงานของบริษัทเลย</p>
+      </div>
+      <div class="hero-tools">
+        <button class="pill-btn" type="button" onclick="openHelp()">❓ ปุ่มแต่ละสีคืออะไร</button>
+        <button class="pill-btn" type="button" id="themeBtn" onclick="toggleTheme()" aria-label="สลับโหมดสว่าง/มืด">🌙</button>
+      </div>
     </div>
-    <div class="hdr-actions">
-      <button class="btn-export" onclick="exportCSV()">📥 Export CSV</button>
-      <div class="hdr-badge" id="verifiedBadge">✓ Verified</div>
+    <div class="steps" aria-label="วิธีใช้ 3 ขั้น">
+      <div class="step"><b>1</b><span>พิมพ์ชื่อหุ้น หรือกดเลือกหมวด</span></div>
+      <div class="step"><b>2</b><span>หาการ์ดบริษัทที่อยากดู</span></div>
+      <div class="step"><b>3</b><span>กดปุ่มสี เพื่อเปิดข้อมูลที่ต้องการ</span></div>
     </div>
   </div>
-  <div class="stats">
-    <div class="stat"><div class="stat-v" id="s-total">–</div><div class="stat-l">บริษัท</div></div>
-    <div class="stat"><div class="stat-v" id="s-sectors">–</div><div class="stat-l">Sectors</div></div>
-    <div class="stat"><div class="stat-v" id="s-ir">–</div><div class="stat-l">IR Pages</div></div>
-    <div class="stat"><div class="stat-v">81</div><div class="stat-l">SEC 56-1</div></div>
-    <div class="stat"><div class="stat-v">81</div><div class="stat-l">FS Links</div></div>
-    <div class="stat"><div class="stat-v">81</div><div class="stat-l">MD&amp;A Links</div></div>
-  </div>
-</div>
+</header>
 
-<!-- CONTROLS -->
-<div class="ctrl">
-  <div class="sw">
-    <span class="sw-ico">🔍</span>
-    <input id="q" type="text" placeholder="ค้นหา Ticker / ชื่อบริษัท…" oninput="render()">
+<main class="wrap">
+  <div class="search-bar">
+    <div class="search" id="searchBox">
+      <span class="ico" aria-hidden="true">🔍</span>
+      <label class="sr" for="q">ค้นหาบริษัท</label>
+      <input id="q" type="search" autocomplete="off" placeholder="พิมพ์ชื่อหุ้น เช่น PTT, ธนาคาร, โรงพยาบาล…" oninput="onSearch()">
+      <button class="clear" type="button" onclick="clearSearch()" aria-label="ล้างคำค้น">✕</button>
+    </div>
   </div>
-  <div class="fwrap" id="fbar">
-    <button class="fb on"  onclick="setS('ALL',this)">ทั้งหมด</button>
-    <button class="fb" onclick="setS('Banking',this)">Banking</button>
-    <button class="fb" onclick="setS('Energy',this)">Energy</button>
-    <button class="fb" onclick="setS('Healthcare',this)">Healthcare</button>
-    <button class="fb" onclick="setS('Property',this)">Property</button>
-    <button class="fb" onclick="setS('REIT',this)">REIT</button>
-    <button class="fb" onclick="setS('Commerce',this)">Commerce</button>
-    <button class="fb" onclick="setS('Finance',this)">Finance</button>
-    <button class="fb" onclick="setS('Industrial',this)">Industrial</button>
-    <button class="fb" onclick="setS('Food',this)">Food &amp; Bev</button>
-    <button class="fb" onclick="setS('Hospitality',this)">Hospitality</button>
-    <button class="fb" onclick="setS('Telecom',this)">Telecom</button>
-    <button class="fb" onclick="setS('Tech',this)">Tech</button>
-    <button class="fb" onclick="setS('Transport',this)">Transport</button>
-  </div>
-  <button class="toggle-inactive" id="inactiveBtn" onclick="toggleInactive()">⛔ Show Delisted</button>
-  <div class="rc" id="rc">–</div>
-</div>
 
-<!-- TABLE -->
-<div class="tw">
-  <table id="tbl">
-    <thead>
-      <tr>
-        <th style="width:32px">#</th>
-        <th class="sort" onclick="srt('ticker')">Ticker ↕</th>
-        <th>ชื่อบริษัท</th>
-        <th class="sort" onclick="srt('sector')">Sector ↕</th>
-        <th title="Investor Relations Website">🏢 IR</th>
-        <th title="56-1 One Report — SEC IDISC">📋 56-1</th>
-        <th title="Financial Statements — SET">📊 FS</th>
-        <th title="MD&A / Quarterly Filings — SET">📝 MD&amp;A</th>
-        <th title="Opportunity Day">🎬 Opp Day</th>
-        <th title="Last Verified">🗓</th>
-      </tr>
-    </thead>
-    <tbody id="tb"></tbody>
-  </table>
-  <div class="empty" id="emp">
-    <div class="empty-ico">🔍</div>
-    <div class="empty-txt">ไม่พบรายการที่ค้นหา</div>
-  </div>
-</div>
+  <h2 class="sec-title">🗂️ เลือกหมวด</h2>
+  <div class="cats" id="cats" role="group" aria-label="หมวดธุรกิจ"></div>
 
-<!-- SOURCE NOTES -->
-<div class="snote">
-  <strong>Auto-generated links per Ticker: </strong>
-  📋 56-1 → market.sec.or.th/public/idisc/en/companyprofile/listed/{TICKER} &nbsp;|&nbsp;
-  📊 FS → set.or.th/.../financial-statement/company-highlights &nbsp;|&nbsp;
-  📝 MD&amp;A → set.or.th/.../news &nbsp;|&nbsp;
-  🎯 OppDay SET → set.or.th/.../company-profile/oppday-company-snapshot &nbsp;|&nbsp;
-  🏢 IR = manually verified · ✏️ Edit: data/companies.js · 🔄 Validate: python scripts/update.py --check
-</div>
-<div class="ftr">Thai SET IR Universe · Jon's RSI Cluster System · v2.1 · <span id="ver">–</span></div>
+  <div class="toolbar">
+    <div class="count" id="count" aria-live="polite">–</div>
+    <label class="chk"><input type="checkbox" id="showOff" onchange="render()"> แสดงหุ้นที่ออกจากตลาดแล้ว</label>
+    <div class="seg" role="group" aria-label="รูปแบบการแสดงผล">
+      <button type="button" id="vCards" onclick="setView('cards')">🃏 การ์ด</button>
+      <button type="button" id="vTable" onclick="setView('table')">📋 ตาราง</button>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="tablewrap" id="tablewrap" hidden>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">⭐</th>
+          <th scope="col"><button type="button" onclick="srt('ticker')">ชื่อหุ้น ↕</button></th>
+          <th scope="col">บริษัท</th>
+          <th scope="col"><button type="button" onclick="srt('sector')">หมวด ↕</button></th>
+          <th scope="col">ลิงก์</th>
+          <th scope="col"><button type="button" onclick="srt('lastVerified')">ตรวจล่าสุด ↕</button></th>
+        </tr>
+      </thead>
+      <tbody id="tb"></tbody>
+    </table>
+  </div>
+
+  <div class="empty" id="empty">
+    <div class="e">🙈</div>
+    <p>ไม่เจอบริษัทที่ค้นหา ลองพิมพ์ใหม่ หรือดูทั้งหมด</p>
+    <button class="btn" type="button" onclick="resetAll()">🌏 ดูทั้งหมด</button>
+  </div>
+
+  <h2 class="sec-title nohint" style="margin-top:34px">🎨 รู้จักปุ่ม 6 สี</h2>
+  <div class="help" id="helpInline"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="row">
+      <span class="badge-ok" id="verified">✓ ตรวจลิงก์แล้ว</span>
+      <button class="btn ghost" type="button" onclick="exportCSV()">📥 ดาวน์โหลดรายชื่อ (CSV)</button>
+    </div>
+    <details>
+      <summary>🛠️ สำหรับผู้ดูแลข้อมูล</summary>
+      <ul>
+        <li>แก้ข้อมูลบริษัทที่ <code>data/companies.js</code> เท่านั้น · ตรวจลิงก์: <code>python scripts/update.py --check --all-links</code></li>
+        <li>📘 56-1 → <code>market.sec.or.th/public/idisc/en/companyprofile/listed/{TICKER}</code></li>
+        <li>💰 งบการเงิน → <code>set.or.th/en/market/product/stock/quote/{ticker}/financial-statement/company-highlights</code></li>
+        <li>💬 MD&amp;A → <code>set.or.th/en/market/product/stock/quote/{ticker}/news</code></li>
+        <li>🎤 Opp Day → <code>set.or.th/en/market/product/stock/quote/{ticker}/company-profile/oppday-company-snapshot</code></li>
+        <li>🏠 IR = ตรวจด้วยมือ (ถ้าเป็น <code>null</code> จะแสดงปุ่มสีเทา)</li>
+      </ul>
+    </details>
+    <p style="margin-top:14px">Thai SET IR Universe · Jon's RSI Cluster System · v3.0 · <span id="ver">–</span></p>
+  </div>
+</footer>
+
+<dialog id="helpDlg" aria-labelledby="helpTitle">
+  <div class="dlg-head">
+    <h2 id="helpTitle">❓ ปุ่มแต่ละสีคืออะไร</h2>
+    <button class="x" type="button" onclick="document.getElementById('helpDlg').close()" aria-label="ปิด">✕</button>
+  </div>
+  <div class="dlg-body"><div class="help" id="helpDlgBody"></div></div>
+</dialog>
 
 <script>
-// ── URL generators (mirror CLAUDE.md) ─────────────────────────────────────
+// ── URL generators (auto from ticker — never hardcode per company) ─────────
 const SEC = 'https://market.sec.or.th/public/idisc/en/companyprofile/listed/';
 const SET = 'https://www.set.or.th/en/market/product/stock/quote/';
 const u561 = t => SEC + t;
@@ -223,127 +330,240 @@ const uFS  = t => SET + t.toLowerCase() + '/financial-statement/company-highligh
 const uMDA = t => SET + t.toLowerCase() + '/news';
 const uOPP = t => SET + t.toLowerCase() + '/company-profile/oppday-company-snapshot';
 
-// ── State ──────────────────────────────────────────────────────────────────
-let curSector = 'ALL', sk = 'ticker', asc = true, showInactive = false;
+// ── Sector look & Thai names (UI only; new sectors fall back to 📦) ────────
+const SECTOR_INFO = {
+  Banking:     { e:'🏦', th:'ธนาคาร',          c:'#2563eb', kid:'ที่ฝากเงิน ให้กู้เงิน' },
+  Energy:      { e:'⚡', th:'พลังงาน',          c:'#ea580c', kid:'น้ำมัน ไฟฟ้า แก๊ส' },
+  Healthcare:  { e:'🏥', th:'โรงพยาบาล',       c:'#16a34a', kid:'ดูแลสุขภาพ' },
+  Property:    { e:'🏘️', th:'บ้านและตึก',       c:'#9333ea', kid:'สร้างบ้าน คอนโด ห้าง' },
+  REIT:        { e:'🏢', th:'กองทุนตึก',        c:'#7c3aed', kid:'เก็บค่าเช่าจากตึก' },
+  Commerce:    { e:'🛒', th:'ร้านค้า',           c:'#ca8a04', kid:'ร้านสะดวกซื้อ ห้าง' },
+  Finance:     { e:'💳', th:'สินเชื่อ',          c:'#0d9488', kid:'บัตรเครดิต เงินกู้' },
+  Industrial:  { e:'🏭', th:'โรงงาน',           c:'#475569', kid:'ผลิตของ วัสดุ' },
+  Food:        { e:'🍜', th:'อาหาร',            c:'#db2777', kid:'อาหาร เครื่องดื่ม' },
+  Hospitality: { e:'🏨', th:'โรงแรม',           c:'#c2410c', kid:'ที่พัก ท่องเที่ยว' },
+  Telecom:     { e:'📱', th:'มือถือ/เน็ต',       c:'#0284c7', kid:'โทรศัพท์ อินเทอร์เน็ต' },
+  Tech:        { e:'💻', th:'เทคโนโลยี',         c:'#4f46e5', kid:'ชิป อิเล็กทรอนิกส์' },
+  Transport:   { e:'✈️', th:'การเดินทาง',        c:'#b45309', kid:'สนามบิน รถไฟฟ้า' },
+  Utilities:   { e:'💧', th:'น้ำและไฟ',          c:'#059669', kid:'ประปา ไฟฟ้า' },
+  Media:       { e:'📺', th:'สื่อ',              c:'#a21caf', kid:'ทีวี โฆษณา' },
+  Insurance:   { e:'🛡️', th:'ประกัน',            c:'#1e40af', kid:'ประกันชีวิต' },
+  Education:   { e:'🎓', th:'โรงเรียน',          c:'#15803d', kid:'การศึกษา' },
+  Infra:       { e:'🛣️', th:'โครงสร้างพื้นฐาน',   c:'#334155', kid:'ทางด่วน โรงไฟฟ้า' },
+};
+const sInfo = s => SECTOR_INFO[s] || { e:'📦', th:s, c:'#64748b', kid:'' };
 
-// ── Init stats ─────────────────────────────────────────────────────────────
-function initStats() {
-  const active = COMPANIES.filter(c => c.active !== false);
-  document.getElementById('s-total').textContent   = active.length;
-  document.getElementById('s-sectors').textContent = new Set(active.map(c=>c.sector)).size;
-  document.getElementById('s-ir').textContent      = active.filter(c=>c.ir).length;
-  // Verified badge: latest date
-  const dates = active.map(c=>c.lastVerified).filter(Boolean).sort();
-  const latest = dates[dates.length-1] || '–';
-  document.getElementById('verifiedBadge').textContent = '✓ Verified ' + latest;
-  document.getElementById('ver').textContent = latest;
+// ── The 6 buttons, explained like to a 10-year-old ─────────────────────────
+const ACTIONS = [
+  { k:'ir',  e:'🏠', t:'เว็บบริษัท',      s:'IR',       url:c => c.ir || null,
+    help:'หน้าเว็บที่บริษัททำไว้ให้คนลงทุน มีข่าว ราคาหุ้น และเอกสารทุกอย่างของบริษัท' },
+  { k:'561', e:'📘', t:'รายงานประจำปี',   s:'56-1',     url:c => u561(c.ticker),
+    help:'สมุดรายงานใหญ่ปีละเล่ม เล่าว่าบริษัททำอะไร ใครเป็นเจ้าของ และปีนี้เป็นยังไง' },
+  { k:'fs',  e:'💰', t:'งบการเงิน',       s:'FS',       url:c => uFS(c.ticker),
+    help:'เหมือนสมุดบัญชีของบริษัท บอกว่าได้เงินเท่าไร ใช้ไปเท่าไร เหลือกำไรเท่าไร' },
+  { k:'mda', e:'💬', t:'ผู้บริหารอธิบาย', s:'MD&A',     url:c => uMDA(c.ticker),
+    help:'ผู้บริหารเขียนอธิบายว่าทำไมไตรมาสนี้กำไรขึ้นหรือลง (อยู่ในหน้าข่าวของบริษัท)' },
+  { k:'opp', e:'🎤', t:'งานพบนักลงทุน',   s:'Opp Day',  url:c => uOPP(c.ticker),
+    help:'งานที่ผู้บริหารมาเล่าผลงานและตอบคำถาม จัดโดยตลาดหลักทรัพย์ฯ ทุกไตรมาส' },
+  { k:'yt',  e:'▶️', t:'ดูวิดีโอ',         s:'YouTube',  url:c => c.yt || null,
+    help:'ค้นหาวิดีโองานพบนักลงทุนของบริษัทนี้บน YouTube ดูย้อนหลังได้' },
+];
+
+// ── State (view + favourites remembered on this device) ────────────────────
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('setir.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('setir.' + k, JSON.stringify(v)); } catch (e) {} },
+};
+let curSector = 'ALL', sk = 'ticker', asc = true;
+let view = store.get('view', 'cards');
+let favs = new Set(store.get('favs', []));
+
+const esc = v => (v ?? '').toString().replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+const isOn = c => c.active !== false;
+
+// ── Category tiles (built from the data, so a new sector appears by itself) ─
+function renderCats() {
+  const showOff = document.getElementById('showOff').checked;
+  const pool = COMPANIES.filter(c => showOff || isOn(c));
+  const counts = {};
+  pool.forEach(c => { counts[c.sector] = (counts[c.sector] || 0) + 1; });
+  const sectors = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || sInfo(a).th.localeCompare(sInfo(b).th, 'th'));
+  const tile = (key, e, t, n, c) =>
+    `<button type="button" class="cat" style="--c:${c}" aria-pressed="${curSector === key}" onclick="setS('${key}')">
+       <span class="e" aria-hidden="true">${e}</span><span class="t">${esc(t)}</span><span class="n">${n} บริษัท</span></button>`;
+  const favN = pool.filter(c => favs.has(c.ticker)).length;
+  document.getElementById('cats').innerHTML =
+    tile('ALL', '🌏', 'ทั้งหมด', pool.length, '#2563eb') +
+    tile('FAV', '⭐', 'ที่ฉันชอบ', favN, '#d97706') +
+    sectors.map(s => { const i = sInfo(s); return tile(s, i.e, i.th, counts[s], i.c); }).join('');
 }
 
 // ── Filter + sort ──────────────────────────────────────────────────────────
 function getRows() {
   const q = document.getElementById('q').value.toLowerCase().trim();
+  const showOff = document.getElementById('showOff').checked;
   return COMPANIES
     .filter(c => {
-      if (!showInactive && c.active === false) return false;
-      const ms = curSector === 'ALL' || c.sector === curSector;
-      const mq = !q || c.ticker.toLowerCase().includes(q)
-                    || c.name.toLowerCase().includes(q)
-                    || (c.nameFull||'').toLowerCase().includes(q)
-                    || c.sector.toLowerCase().includes(q);
-      return ms && mq;
+      if (!showOff && !isOn(c)) return false;
+      if (curSector === 'FAV' && !favs.has(c.ticker)) return false;
+      if (curSector !== 'ALL' && curSector !== 'FAV' && c.sector !== curSector) return false;
+      if (!q) return true;
+      const i = sInfo(c.sector);
+      return [c.ticker, c.name, c.nameFull, c.sector, i.th, i.kid].some(v => (v || '').toLowerCase().includes(q));
     })
-    .sort((a,b) => {
-      const va = (a[sk]||'').toString(), vb = (b[sk]||'').toString();
+    .sort((a, b) => {
+      const va = (a[sk] || '').toString(), vb = (b[sk] || '').toString();
       return asc ? va.localeCompare(vb) : vb.localeCompare(va);
     });
 }
 
-// ── Link button helper ─────────────────────────────────────────────────────
-function lb(cls, href, ico, label, tip) {
-  if (!href) return `<span class="lb lb-na" title="${tip}">– N/A</span>`;
-  return `<a class="lb ${cls}" href="${href}" target="_blank" rel="noopener" title="${tip}">${ico} ${label}</a>`;
+// ── Pieces ─────────────────────────────────────────────────────────────────
+function actButton(a, c, mini) {
+  const href = a.url(c);
+  const tip = `${a.t} (${a.s}) · ${c.ticker}`;
+  if (mini) {
+    return href
+      ? `<a class="mini k-${a.k}" href="${esc(href)}" target="_blank" rel="noopener" title="${esc(tip)}">${a.e} ${esc(a.s)}</a>`
+      : `<span class="mini na k-${a.k}" title="ไม่มีข้อมูล">${a.e} –</span>`;
+  }
+  return href
+    ? `<a class="act k-${a.k}" href="${esc(href)}" target="_blank" rel="noopener" title="${esc(tip)}">
+         <span class="e" aria-hidden="true">${a.e}</span><span class="t">${esc(a.t)}</span><span class="s">${esc(a.s)}</span></a>`
+    : `<span class="act na k-${a.k}" title="ยังไม่มีข้อมูล"><span class="e" aria-hidden="true">${a.e}</span><span class="t">ไม่มีข้อมูล</span><span class="s">${esc(a.s)}</span></span>`;
+}
+function starBtn(c) {
+  const on = favs.has(c.ticker);
+  return `<button type="button" class="star" aria-pressed="${on}" aria-label="${on ? 'เอาออกจากที่ชอบ' : 'เก็บไว้ในที่ชอบ'}: ${esc(c.ticker)}" onclick="toggleFav('${esc(c.ticker)}')">⭐</button>`;
 }
 
-// ── Render ─────────────────────────────────────────────────────────────────
-function render() {
-  const rows = getRows();
-  const tb   = document.getElementById('tb');
-  const emp  = document.getElementById('emp');
-  const tbl  = document.getElementById('tbl');
-  document.getElementById('rc').textContent = `${rows.length} / ${COMPANIES.filter(c=>showInactive||c.active!==false).length} รายการ`;
-
-  if (!rows.length) {
-    emp.style.display = 'block'; tbl.style.display = 'none'; return;
-  }
-  emp.style.display = 'none'; tbl.style.display = '';
-
-  tb.innerHTML = rows.map((c,i) => {
-    const inactive = c.active === false;
-    const tkCls    = inactive ? 'tk inactive' : 'tk';
-    const noteHtml = c.notes ? ` <span class="note-badge" title="${c.notes}">📌</span>` : '';
-    return `
-    <tr class="${inactive ? 'inactive' : ''}">
-      <td style="color:#cbd5e0;font-size:10px;font-family:monospace;font-weight:600">${i+1}</td>
-      <td><span class="${tkCls}">${c.ticker}</span></td>
-      <td style="font-weight:500;min-width:155px">${c.name}${noteHtml}</td>
-      <td><span class="sb s-${c.sector}">${c.sector}</span></td>
-      <td>${lb('lb-ir',  c.ir,         '🏢','IR',   'IR — '+c.name)}</td>
-      <td>${lb('lb-561', u561(c.ticker),'📋','56-1', '56-1 One Report · SEC IDISC')}</td>
-      <td>${lb('lb-fs',  uFS(c.ticker), '📊','FS',   'Financial Statements · SET')}</td>
-      <td>${lb('lb-mda', uMDA(c.ticker),'📝','MD&A', 'MD&A / Quarterly Filings · SET')}</td>
-      <td>
-        <div class="bgroup">
-          ${lb('lb-set', uOPP(c.ticker),'🎯','SET', 'Opp Day Official · SET')}
-          ${lb('lb-yt',  c.yt||null,    '▶','YT',  'Opp Day · YouTube Search')}
+function renderCards(rows) {
+  document.getElementById('grid').innerHTML = rows.map(c => {
+    const i = sInfo(c.sector);
+    return `<article class="card${isOn(c) ? '' : ' off'}" style="--c:${i.c}">
+      <div class="card-head">
+        <div class="card-emoji" aria-hidden="true">${i.e}</div>
+        <div class="card-id">
+          <div class="tk">${esc(c.ticker)}</div>
+          <div class="nm" title="${esc(c.nameFull || c.name)}">${esc(c.name)}</div>
+          <span class="chip">${i.e} ${esc(i.th)}</span>${isOn(c) ? '' : '<span class="chip gone">ออกจากตลาดแล้ว</span>'}
         </div>
-      </td>
-      <td><span class="vdate">${c.lastVerified||'–'}</span></td>
+        ${starBtn(c)}
+      </div>
+      ${c.notes ? `<div class="note">📌 ${esc(c.notes)}</div>` : ''}
+      <div class="acts">${ACTIONS.map(a => actButton(a, c, false)).join('')}</div>
+    </article>`;
+  }).join('');
+}
+
+function renderTable(rows) {
+  document.getElementById('tb').innerHTML = rows.map(c => {
+    const i = sInfo(c.sector);
+    return `<tr class="${isOn(c) ? '' : 'off'}">
+      <td>${starBtn(c)}</td>
+      <td><span class="tk-s">${esc(c.ticker)}</span></td>
+      <td>${esc(c.name)}${c.notes ? ` <span title="${esc(c.notes)}">📌</span>` : ''}</td>
+      <td><span class="chip" style="--c:${i.c}">${i.e} ${esc(i.th)}</span></td>
+      <td><div class="minis">${ACTIONS.map(a => actButton(a, c, true)).join('')}</div></td>
+      <td style="color:var(--muted);font-size:14px;white-space:nowrap">${esc(c.lastVerified || '–')}</td>
     </tr>`;
   }).join('');
 }
 
+function render() {
+  renderCats();
+  const rows = getRows();
+  const showOff = document.getElementById('showOff').checked;
+  const total = COMPANIES.filter(c => showOff || isOn(c)).length;
+  const label = curSector === 'ALL' ? 'ทั้งหมด' : curSector === 'FAV' ? '⭐ ที่ฉันชอบ' : sInfo(curSector).e + ' ' + sInfo(curSector).th;
+  document.getElementById('count').innerHTML = `${label}: ${rows.length} บริษัท <small>(จาก ${total})</small>`;
+
+  const empty = !rows.length;
+  document.getElementById('empty').style.display = empty ? 'block' : 'none';
+  const emp = document.querySelector('#empty p');
+  emp.textContent = curSector === 'FAV' && !favs.size
+    ? 'ยังไม่มีบริษัทที่ชอบ กดดาว ⭐ บนการ์ดเพื่อเก็บไว้ที่นี่'
+    : 'ไม่เจอบริษัทที่ค้นหา ลองพิมพ์ใหม่ หรือดูทั้งหมด';
+  document.getElementById('grid').hidden = empty || view !== 'cards';
+  document.getElementById('tablewrap').hidden = empty || view !== 'table';
+  document.getElementById('vCards').setAttribute('aria-pressed', view === 'cards');
+  document.getElementById('vTable').setAttribute('aria-pressed', view === 'table');
+  if (view === 'cards') renderCards(rows); else renderTable(rows);
+}
+
 // ── Controls ───────────────────────────────────────────────────────────────
-function setS(sector, btn) {
-  curSector = sector;
-  document.querySelectorAll('.fb').forEach(b => b.classList.remove('on'));
-  btn.classList.add('on');
+function setS(s) { curSector = (curSector === s && s !== 'ALL') ? 'ALL' : s; render(); }
+function srt(key) { if (sk === key) asc = !asc; else { sk = key; asc = true; } render(); }
+function setView(v) { view = v; store.set('view', v); render(); }
+function onSearch() {
+  document.getElementById('searchBox').classList.toggle('has-text', !!document.getElementById('q').value);
   render();
 }
-function srt(key) {
-  if (sk === key) asc = !asc; else { sk = key; asc = true; }
+function clearSearch() { const q = document.getElementById('q'); q.value = ''; onSearch(); q.focus(); }
+function resetAll() { curSector = 'ALL'; clearSearch(); }
+function toggleFav(t) {
+  favs.has(t) ? favs.delete(t) : favs.add(t);
+  store.set('favs', [...favs]);
   render();
 }
-function toggleInactive() {
-  showInactive = !showInactive;
-  const btn = document.getElementById('inactiveBtn');
-  btn.classList.toggle('on', showInactive);
-  btn.textContent = showInactive ? '⛔ Hide Delisted' : '⛔ Show Delisted';
-  render();
+function openHelp() { document.getElementById('helpDlg').showModal(); }
+
+function applyTheme(t) {
+  if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme');
+  const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  document.getElementById('themeBtn').textContent = dark ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme')
+    || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  store.set('theme', next); applyTheme(next);
+}
+
+// ── Help cards ─────────────────────────────────────────────────────────────
+function renderHelp() {
+  const html = ACTIONS.map(a => `<div class="help-item k-${a.k}" style="border-left-color:var(--k)">
+      <div class="e" aria-hidden="true">${a.e}</div>
+      <div><h3>${esc(a.t)} <span style="color:var(--muted);font-weight:400">(${esc(a.s)})</span></h3><p>${esc(a.help)}</p></div>
+    </div>`).join('');
+  document.getElementById('helpInline').innerHTML = html;
+  document.getElementById('helpDlgBody').innerHTML = html;
 }
 
 // ── Export CSV ─────────────────────────────────────────────────────────────
 function exportCSV() {
   const rows  = getRows();
   const heads = ['Ticker','Name','FullName','Sector','IR','56-1','FS','MD&A','OppDay_SET','OppDay_YT','Notes','LastVerified'];
-  const esc   = v => `"${(v||'').toString().replace(/"/g,'""')}"`;
+  const q     = v => `"${(v || '').toString().replace(/"/g, '""')}"`;
   const lines = [heads.join(',')];
-  rows.forEach(c => {
-    lines.push([
-      c.ticker, c.name, c.nameFull||'', c.sector,
-      c.ir||'', u561(c.ticker), uFS(c.ticker), uMDA(c.ticker),
-      uOPP(c.ticker), c.yt||'', c.notes||'', c.lastVerified||''
-    ].map(esc).join(','));
-  });
-  const blob = new Blob(['﻿'+lines.join('\n')], { type:'text/csv;charset=utf-8;' });
-  const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
-  a.download = `thai-set-ir_${new Date().toISOString().slice(0,10)}.csv`;
+  rows.forEach(c => lines.push([
+    c.ticker, c.name, c.nameFull || '', c.sector,
+    c.ir || '', u561(c.ticker), uFS(c.ticker), uMDA(c.ticker),
+    uOPP(c.ticker), c.yt || '', c.notes || '', c.lastVerified || ''
+  ].map(q).join(',')));
+  const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `thai-set-ir_${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
 }
 
 // ── Boot ───────────────────────────────────────────────────────────────────
-initStats();
-render();
+(function boot() {
+  if (typeof COMPANIES === 'undefined') {
+    document.querySelector('main').innerHTML = '<div class="empty" style="display:block"><div class="e">😵</div><p>โหลดข้อมูลไม่ได้ (ไม่พบ data/companies.js) — เปิดไฟล์นี้จากโฟลเดอร์ของโปรเจกต์</p></div>';
+    return;
+  }
+  applyTheme(store.get('theme', null));
+  const dates = COMPANIES.filter(isOn).map(c => c.lastVerified).filter(Boolean).sort();
+  const latest = dates[dates.length - 1] || '–';
+  document.getElementById('verified').textContent = `✓ ตรวจลิงก์ล่าสุด ${latest}`;
+  document.getElementById('ver').textContent = latest;
+  renderHelp();
+  render();
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); document.getElementById('q').focus(); }
+  });
+})();
 </script>
 </body>
 </html>
