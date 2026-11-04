@@ -83,6 +83,43 @@ Run these in order; do not push until `check` reports 0 broken URLs.
 5. `python scripts/update.py --stamp` — update `lastVerified`.
 6. Commit with the quarter in the message, e.g. `Q2 2026 data update — verified <date>`, then push. GitHub Actions deploys automatically.
 
+## Filings audit (GROKBOT Drive `filings/` folder)
+
+`scripts/audit_filings.py` checks that every FS + MD&A filing in the Drive
+`GROKBOT/filings/` folder is **complete for every period and actually is the
+period it claims to be**. It reads the folder's `filings-index` Google Sheet
+(as CSV) and optionally a local copy of the files. Rules (non-calendar fiscal
+years, documented not-filed exemptions, SEC code aliases, name aliases) live in
+`scripts/filings_rules.json`. Edit that file, not the script.
+
+```bash
+# 1) get the index as CSV: Sheets → File → Download → CSV, or (agent) Drive MCP
+#    download_file_content(fileId=<filings-index id>, exportMimeType="text/csv")
+# 2) index-only audit (completeness + consistency)
+python scripts/audit_filings.py --index filings-index.csv --md audit.md --csv issues.csv
+# 3) full audit incl. file bytes + content (Drive for desktop / rclone copy)
+python scripts/audit_filings.py --index filings-index.csv \
+  --root "$HOME/Library/CloudStorage/GoogleDrive-<account>/My Drive/GROKBOT/filings"
+# narrow down / machine output
+python scripts/audit_filings.py --index filings-index.csv --ticker AEONTS --year 2024 --json | jq '.findings'
+```
+
+| Tier | Needs | Catches |
+|------|-------|---------|
+| completeness | index | due period with no usable row (`C-MISSING`, `C-NOT-INDEXED`), preferred-row problems |
+| index | index | title period-end ≠ expected (`I-PERIOD-END`), SEC filing date before period end = previous period's doc (`I-FILED-BEFORE`), foreign SEC company code (`I-SEC-CODE`), wrong doc kind/lang, bad `drive_path`, file kept outside `filings/`, duplicate sha256 across periods |
+| files | `--root` | file absent, size/sha256 mismatch, corrupt zip/pdf, **content names another period** (`F-WRONG-PERIOD`) or no recognisable company/period |
+
+Content check: text comes from PDFs (pdftotext → pypdf fallback) and from the
+DOCX/XLSX inside SEC fs-full zips. A period counts as verified when the text
+has the expected period-end date (EN/TH, CE/BE formats) or a period label
+(`3Q25`, `Q3/2025`, `ไตรมาสที่ 3/2568`, `FY2025`). When neither is there but
+the prior/next period is, the file is flagged as the wrong period.
+
+A slot is due at period end + 45 days (quarter) / + 60 days (FY); before that it is `NOT_DUE`.
+Exit code is 1 when there are errors (`--strict`: warnings count too), so it can gate CI.
+JSON → `{ summary{per_year, severity, by_code}, findings[{severity,code,ticker,year,period,type,row,message}], file_stats, not_in_index[] }`.
+
 ## Discovery
 
 ```bash
